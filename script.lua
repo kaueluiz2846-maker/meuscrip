@@ -52,8 +52,8 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local loginFrame = Instance.new("Frame")
-loginFrame.Size = UDim2.new(0, 420, 0, 330)
-loginFrame.Position = UDim2.new(0.5, -210, 0.4, -165)
+loginFrame.Size = UDim2.new(0, 340, 0, 260)
+loginFrame.Position = UDim2.new(0.5, -170, 0.4, -130)
 loginFrame.BackgroundColor3 = COLORS.Black
 loginFrame.BackgroundTransparency = 0.1
 loginFrame.BorderSizePixel = 0
@@ -73,7 +73,7 @@ loginCorner.CornerRadius = UDim.new(0, 18)
 loginCorner.Parent = loginFrame
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -20, 0, 60)
+titleLabel.Size = UDim2.new(1, -20, 0, 50)
 titleLabel.Position = UDim2.new(0, 10, 0, 10)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "🔑 VERIFICAÇÃO DE CHAVE"
@@ -84,8 +84,8 @@ titleLabel.TextXAlignment = Enum.TextXAlignment.Center
 titleLabel.Parent = loginFrame
 
 local codeBox = Instance.new("TextBox")
-codeBox.Size = UDim2.new(0.85, 0, 0, 55)
-codeBox.Position = UDim2.new(0.075, 0, 0, 85)
+codeBox.Size = UDim2.new(0.85, 0, 0, 45)
+codeBox.Position = UDim2.new(0.075, 0, 0, 70)
 codeBox.BackgroundColor3 = COLORS.DarkGray
 codeBox.TextColor3 = COLORS.White
 codeBox.PlaceholderText = "Digite sua chave..."
@@ -101,8 +101,8 @@ codeCorner.CornerRadius = UDim.new(0, 12)
 codeCorner.Parent = codeBox
 
 local verifyBtn = Instance.new("TextButton")
-verifyBtn.Size = UDim2.new(0.85, 0, 0, 55)
-verifyBtn.Position = UDim2.new(0.075, 0, 0, 160)
+verifyBtn.Size = UDim2.new(0.85, 0, 0, 45)
+verifyBtn.Position = UDim2.new(0.075, 0, 0, 130)
 verifyBtn.Text = "VERIFICAR"
 verifyBtn.BackgroundColor3 = COLORS.Red
 verifyBtn.TextColor3 = COLORS.White
@@ -124,8 +124,8 @@ verifyBtn.MouseLeave:Connect(function()
 end)
 
 local errorLabel = Instance.new("TextLabel")
-errorLabel.Size = UDim2.new(0.85, 0, 0, 30)
-errorLabel.Position = UDim2.new(0.075, 0, 0, 225)
+errorLabel.Size = UDim2.new(0.85, 0, 0, 25)
+errorLabel.Position = UDim2.new(0.075, 0, 0, 185)
 errorLabel.Text = "❌ Chave inválida!"
 errorLabel.TextColor3 = COLORS.NeonRed
 errorLabel.BackgroundTransparency = 1
@@ -136,7 +136,7 @@ errorLabel.Parent = loginFrame
 
 local contactLabel = Instance.new("TextLabel")
 contactLabel.Size = UDim2.new(0.85, 0, 0, 25)
-contactLabel.Position = UDim2.new(0.075, 0, 0, 260)
+contactLabel.Position = UDim2.new(0.075, 0, 0, 215)
 contactLabel.Text = "Não tem uma chave? Contate o criador"
 contactLabel.TextColor3 = COLORS.LightGray
 contactLabel.BackgroundTransparency = 1
@@ -306,6 +306,108 @@ local function createBubble()
     bubble.MouseButton1Click:Connect(toggleMenu)
 end
 
+local function createSlider(parent, yPos, label, minVal, maxVal, default, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(0.9, 0, 0, 40)
+    container.Position = UDim2.new(0.05, 0, yPos, 0)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.35, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.TextColor3 = COLORS.White
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextScaled = true
+    lbl.Parent = container
+
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(0.45, 0, 0, 12)
+    track.Position = UDim2.new(0.35, 0, 0.5, -6)
+    track.BackgroundColor3 = COLORS.DarkGray
+    track.BorderSizePixel = 0
+    track.Parent = container
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(0, 6)
+    trackCorner.Parent = track
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(0, 0, 1, 0)
+    fill.BackgroundColor3 = COLORS.NeonRed
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 6)
+    fillCorner.Parent = fill
+
+    local thumb = Instance.new("TextButton")
+    thumb.Size = UDim2.new(0, 20, 0, 20)
+    thumb.Position = UDim2.new(0, -10, 0.5, -10)
+    thumb.BackgroundColor3 = COLORS.White
+    thumb.Text = ""
+    thumb.BorderSizePixel = 0
+    thumb.AutoButtonColor = false
+    thumb.Parent = track
+    local thumbCorner = Instance.new("UICorner")
+    thumbCorner.CornerRadius = UDim.new(1, 0)
+    thumbCorner.Parent = thumb
+
+    local valLabel = Instance.new("TextLabel")
+    valLabel.Size = UDim2.new(0.2, 0, 1, 0)
+    valLabel.Position = UDim2.new(0.8, 0, 0, 0)
+    valLabel.BackgroundTransparency = 1
+    valLabel.Text = tostring(default)
+    valLabel.TextColor3 = COLORS.White
+    valLabel.Font = Enum.Font.GothamBold
+    valLabel.TextScaled = true
+    valLabel.Parent = container
+
+    local currentValue = default
+    local function updateValue(newValue)
+        newValue = math.clamp(newValue, minVal, maxVal)
+        currentValue = newValue
+        local fraction = (newValue - minVal) / (maxVal - minVal)
+        fill.Size = UDim2.new(fraction, 0, 1, 0)
+        thumb.Position = UDim2.new(fraction, -10, 0.5, -10)
+        valLabel.Text = tostring(math.floor(newValue * 10) / 10)
+        if callback then callback(newValue) end
+    end
+
+    local function setFromMouseX(mouseX)
+        local trackAbs = track.AbsolutePosition.X
+        local trackWidth = track.AbsoluteSize.X
+        local fraction = (mouseX - trackAbs) / trackWidth
+        fraction = math.clamp(fraction, 0, 1)
+        updateValue(minVal + fraction * (maxVal - minVal))
+    end
+
+    thumb.MouseButton1Down:Connect(function()
+        local con
+        con = UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                setFromMouseX(UserInputService:GetMouseLocation().X)
+            end
+        end)
+        local endCon
+        endCon = UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                con:Disconnect()
+                endCon:Disconnect()
+            end
+        end)
+    end)
+
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            setFromMouseX(UserInputService:GetMouseLocation().X)
+        end
+    end)
+
+    updateValue(default)
+    return container
+end
+
 local function createMenu()
     menu = Instance.new("Frame")
     menu.Size = UDim2.new(0, 0, 0, 0)
@@ -359,8 +461,8 @@ local function createMenu()
     sidebarPadding.PaddingTop = UDim.new(0, 10)
     sidebarPadding.Parent = sidebarScroll
 
-    local tabs = {"Créditos", "Principal", "Armas"}
-    local icons = {["Créditos"] = "📄", ["Principal"] = "⚡", ["Armas"] = "🔫"}
+    local tabs = {"Créditos", "Principal", "Jogador", "Armas"}
+    local icons = {["Créditos"] = "📄", ["Principal"] = "⚡", ["Jogador"] = "🏃", ["Armas"] = "🔫"}
     sidebarBtns = {}
 
     for _, tab in ipairs(tabs) do
@@ -574,6 +676,63 @@ local function createMenu()
         teleDropdownFrame.Visible = not teleDropdownFrame.Visible
         if teleDropdownFrame.Visible then refreshDropdown(teleDropdownFrame) end
     end)
+
+    local jogadorTab = Instance.new("Frame")
+    jogadorTab.Name = "Jogador"
+    jogadorTab.Size = UDim2.new(1, 0, 1, 0)
+    jogadorTab.BackgroundTransparency = 1
+    jogadorTab.Visible = false
+    jogadorTab.Parent = mainArea
+
+    local function applyPlayerStats()
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                hum.WalkSpeed = currentWalkSpeed
+                hum.JumpPower = currentJumpPower
+                hum.HipHeight = 0
+            end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root then
+                workspace.Gravity = currentGravity
+            end
+        end
+    end
+
+    local currentWalkSpeed = 16
+    local currentJumpPower = 50
+    local currentGravity = 196.2
+
+    createSlider(jogadorTab, 0.05, "🏃 Velocidade", 0, 100, 16, function(val)
+        currentWalkSpeed = val
+        applyPlayerStats()
+    end)
+    createSlider(jogadorTab, 0.25, "🦘 Pulo", 0, 200, 50, function(val)
+        currentJumpPower = val
+        applyPlayerStats()
+    end)
+    createSlider(jogadorTab, 0.45, "🌍 Gravidade", 0, 400, 196.2, function(val)
+        currentGravity = val
+        applyPlayerStats()
+    end)
+
+    local function onCharacterAdded(char)
+        local hum = char:WaitForChild("Humanoid")
+        hum.WalkSpeed = currentWalkSpeed
+        hum.JumpPower = currentJumpPower
+        workspace.Gravity = currentGravity
+        hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+            hum.WalkSpeed = currentWalkSpeed
+        end)
+        hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+            hum.JumpPower = currentJumpPower
+        end)
+    end
+    LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+    if LocalPlayer.Character then
+        onCharacterAdded(LocalPlayer.Character)
+    end
 
     local armasTab = Instance.new("Frame")
     armasTab.Name = "Armas"

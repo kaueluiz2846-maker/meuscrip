@@ -52,8 +52,8 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local loginFrame = Instance.new("Frame")
-loginFrame.Size = UDim2.new(0, 340, 0, 260)
-loginFrame.Position = UDim2.new(0.5, -170, 0.4, -130)
+loginFrame.Size = UDim2.new(0, 280, 0, 230)
+loginFrame.Position = UDim2.new(0.5, -140, 0.4, -115)
 loginFrame.BackgroundColor3 = COLORS.Black
 loginFrame.BackgroundTransparency = 0.1
 loginFrame.BorderSizePixel = 0
@@ -73,7 +73,7 @@ loginCorner.CornerRadius = UDim.new(0, 18)
 loginCorner.Parent = loginFrame
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -20, 0, 50)
+titleLabel.Size = UDim2.new(1, -20, 0, 40)
 titleLabel.Position = UDim2.new(0, 10, 0, 10)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "🔑 VERIFICAÇÃO DE CHAVE"
@@ -84,8 +84,8 @@ titleLabel.TextXAlignment = Enum.TextXAlignment.Center
 titleLabel.Parent = loginFrame
 
 local codeBox = Instance.new("TextBox")
-codeBox.Size = UDim2.new(0.85, 0, 0, 45)
-codeBox.Position = UDim2.new(0.075, 0, 0, 70)
+codeBox.Size = UDim2.new(0.85, 0, 0, 40)
+codeBox.Position = UDim2.new(0.075, 0, 0, 60)
 codeBox.BackgroundColor3 = COLORS.DarkGray
 codeBox.TextColor3 = COLORS.White
 codeBox.PlaceholderText = "Digite sua chave..."
@@ -101,8 +101,8 @@ codeCorner.CornerRadius = UDim.new(0, 12)
 codeCorner.Parent = codeBox
 
 local verifyBtn = Instance.new("TextButton")
-verifyBtn.Size = UDim2.new(0.85, 0, 0, 45)
-verifyBtn.Position = UDim2.new(0.075, 0, 0, 130)
+verifyBtn.Size = UDim2.new(0.85, 0, 0, 40)
+verifyBtn.Position = UDim2.new(0.075, 0, 0, 115)
 verifyBtn.Text = "VERIFICAR"
 verifyBtn.BackgroundColor3 = COLORS.Red
 verifyBtn.TextColor3 = COLORS.White
@@ -125,7 +125,7 @@ end)
 
 local errorLabel = Instance.new("TextLabel")
 errorLabel.Size = UDim2.new(0.85, 0, 0, 25)
-errorLabel.Position = UDim2.new(0.075, 0, 0, 185)
+errorLabel.Position = UDim2.new(0.075, 0, 0, 165)
 errorLabel.Text = "❌ Chave inválida!"
 errorLabel.TextColor3 = COLORS.NeonRed
 errorLabel.BackgroundTransparency = 1
@@ -136,7 +136,7 @@ errorLabel.Parent = loginFrame
 
 local contactLabel = Instance.new("TextLabel")
 contactLabel.Size = UDim2.new(0.85, 0, 0, 25)
-contactLabel.Position = UDim2.new(0.075, 0, 0, 215)
+contactLabel.Position = UDim2.new(0.075, 0, 0, 195)
 contactLabel.Text = "Não tem uma chave? Contate o criador"
 contactLabel.TextColor3 = COLORS.LightGray
 contactLabel.BackgroundTransparency = 1
@@ -148,6 +148,9 @@ local bubble, menu, menuOpen
 local currentTab = "Créditos"
 local selectedPlayer, viewEnabled, viewConn
 local dropdownFrame, teleDropdownFrame, mainArea, sidebarBtns
+local killTargetPlayer = nil
+local killTargetLabel = nil
+local killDropdownFrame = nil
 
 function toggleMenu()
     if not menu then return end
@@ -241,6 +244,17 @@ local function refreshDropdown(frame)
                         end
                     end
                     teleDropdownFrame.Visible = false
+                elseif frame == killDropdownFrame then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p.Name == name then
+                            killTargetPlayer = p
+                            break
+                        end
+                    end
+                    if killTargetLabel then
+                        killTargetLabel.Text = killTargetPlayer and killTargetPlayer.Name or "Nenhum"
+                    end
+                    killDropdownFrame.Visible = false
                 end
             end)
         end
@@ -261,6 +275,7 @@ function onTabClick(tab)
     end
     if tab == "Principal" then
         refreshDropdown(dropdownFrame)
+        if killDropdownFrame then refreshDropdown(killDropdownFrame) end
     end
 end
 
@@ -364,43 +379,52 @@ local function createSlider(parent, yPos, label, minVal, maxVal, default, callba
     valLabel.Parent = container
 
     local currentValue = default
-    local function updateValue(newValue)
-        newValue = math.clamp(newValue, minVal, maxVal)
-        currentValue = newValue
-        local fraction = (newValue - minVal) / (maxVal - minVal)
-        fill.Size = UDim2.new(fraction, 0, 1, 0)
-        thumb.Position = UDim2.new(fraction, -10, 0.5, -10)
-        valLabel.Text = tostring(math.floor(newValue * 10) / 10)
-        if callback then callback(newValue) end
-    end
 
     local function setFromMouseX(mouseX)
         local trackAbs = track.AbsolutePosition.X
         local trackWidth = track.AbsoluteSize.X
         local fraction = (mouseX - trackAbs) / trackWidth
         fraction = math.clamp(fraction, 0, 1)
-        updateValue(minVal + fraction * (maxVal - minVal))
+        return fraction
     end
 
-    thumb.MouseButton1Down:Connect(function()
-        local con
-        con = UserInputService.InputChanged:Connect(function(input)
+    local function updateValue(newValue)
+        newValue = math.clamp(newValue, minVal, maxVal)
+        currentValue = newValue
+        local fraction = (newValue - minVal) / (maxVal - minVal)
+        fill.Size = UDim2.new(fraction, 0, 1, 0)
+        thumb.Position = UDim2.new(fraction, -10, 0.5, -10)
+        valLabel.Text = tostring(math.floor(newValue * 10 + 0.5) / 10)
+        if callback then callback(newValue) end
+    end
+
+    local function startDrag()
+        local moveCon, endCon
+        moveCon = UserInputService.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement then
-                setFromMouseX(UserInputService:GetMouseLocation().X)
+                local frac = setFromMouseX(UserInputService:GetMouseLocation().X)
+                updateValue(minVal + frac * (maxVal - minVal))
             end
         end)
-        local endCon
         endCon = UserInputService.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                con:Disconnect()
-                endCon:Disconnect()
+                if moveCon then moveCon:Disconnect() end
+                if endCon then endCon:Disconnect() end
             end
         end)
-    end)
+    end
 
     track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            setFromMouseX(UserInputService:GetMouseLocation().X)
+            local frac = setFromMouseX(UserInputService:GetMouseLocation().X)
+            updateValue(minVal + frac * (maxVal - minVal))
+            startDrag()
+        end
+    end)
+
+    thumb.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            startDrag()
         end
     end)
 
@@ -531,9 +555,10 @@ local function createMenu()
     principalTab.Visible = false
     principalTab.Parent = mainArea
 
+    -- View toggle
     local viewToggle = Instance.new("TextButton")
     viewToggle.Size = UDim2.new(0.18, 0, 0, 36)
-    viewToggle.Position = UDim2.new(0.03, 0, 0.03, 0)
+    viewToggle.Position = UDim2.new(0.03, 0, 0.08, 0)
     viewToggle.Text = "👁️ View: OFF"
     viewToggle.BackgroundColor3 = COLORS.DarkGray
     viewToggle.TextColor3 = COLORS.White
@@ -559,9 +584,10 @@ local function createMenu()
         updateCamera()
     end)
 
+    -- Select player for view
     local selectBar = Instance.new("TextButton")
     selectBar.Size = UDim2.new(0.65, 0, 0, 36)
-    selectBar.Position = UDim2.new(0.24, 0, 0.03, 0)
+    selectBar.Position = UDim2.new(0.24, 0, 0.08, 0)
     selectBar.Text = "Selecionar jogador"
     selectBar.BackgroundColor3 = COLORS.DarkGray
     selectBar.TextColor3 = COLORS.White
@@ -584,8 +610,8 @@ local function createMenu()
     sidebarBtns.selectBar = selectBar
 
     dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(0.76, 0, 0.22, 0)
-    dropdownFrame.Position = UDim2.new(0.12, 0, 0.15, 0)
+    dropdownFrame.Size = UDim2.new(0.76, 0, 0.15, 0)
+    dropdownFrame.Position = UDim2.new(0.12, 0, 0.20, 0)
     dropdownFrame.BackgroundColor3 = COLORS.DarkGray
     dropdownFrame.BackgroundTransparency = 0.1
     dropdownFrame.BorderSizePixel = 0
@@ -613,10 +639,11 @@ local function createMenu()
         if dropdownFrame.Visible then refreshDropdown(dropdownFrame) end
     end)
 
+    -- Teleport
     local teleLabel = Instance.new("TextLabel")
     teleLabel.Size = UDim2.new(0.12, 0, 0, 36)
     teleLabel.Position = UDim2.new(0.03, 0, 0.42, 0)
-    teleLabel.Text = "📌 Tele:"
+    teleLabel.Text = "📌 Teleport:"
     teleLabel.TextColor3 = COLORS.White
     teleLabel.BackgroundTransparency = 1
     teleLabel.Font = Enum.Font.GothamBold
@@ -625,7 +652,7 @@ local function createMenu()
 
     local teleportBar = Instance.new("TextButton")
     teleportBar.Size = UDim2.new(0.65, 0, 0, 36)
-    teleportBar.Position = UDim2.new(0.17, 0, 0.42, 0)
+    teleportBar.Position = UDim2.new(0.20, 0, 0.42, 0)
     teleportBar.Text = "Jogador"
     teleportBar.BackgroundColor3 = COLORS.DarkGray
     teleportBar.TextColor3 = COLORS.White
@@ -648,7 +675,7 @@ local function createMenu()
     sidebarBtns.teleportBar = teleportBar
 
     teleDropdownFrame = Instance.new("Frame")
-    teleDropdownFrame.Size = UDim2.new(0.76, 0, 0.22, 0)
+    teleDropdownFrame.Size = UDim2.new(0.76, 0, 0.15, 0)
     teleDropdownFrame.Position = UDim2.new(0.12, 0, 0.54, 0)
     teleDropdownFrame.BackgroundColor3 = COLORS.DarkGray
     teleDropdownFrame.BackgroundTransparency = 0.1
@@ -677,12 +704,169 @@ local function createMenu()
         if teleDropdownFrame.Visible then refreshDropdown(teleDropdownFrame) end
     end)
 
+    -- Kill section
+    local killSectionLabel = Instance.new("TextLabel")
+    killSectionLabel.Size = UDim2.new(1, 0, 0, 25)
+    killSectionLabel.Position = UDim2.new(0, 0, 0.68, 0)
+    killSectionLabel.Text = "🎯 Alvo:"
+    killSectionLabel.TextColor3 = COLORS.NeonRed
+    killSectionLabel.BackgroundTransparency = 1
+    killSectionLabel.Font = Enum.Font.GothamBold
+    killSectionLabel.TextScaled = true
+    killSectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    killSectionLabel.Parent = principalTab
+
+    local killSelectBar = Instance.new("TextButton")
+    killSelectBar.Size = UDim2.new(0.5, 0, 0, 36)
+    killSelectBar.Position = UDim2.new(0.12, 0, 0.73, 0)
+    killSelectBar.Text = "Selecionar"
+    killSelectBar.BackgroundColor3 = COLORS.DarkGray
+    killSelectBar.TextColor3 = COLORS.White
+    killSelectBar.Font = Enum.Font.Gotham
+    killSelectBar.TextScaled = true
+    killSelectBar.BorderSizePixel = 0
+    killSelectBar.Parent = principalTab
+
+    local ksCorner = Instance.new("UICorner")
+    ksCorner.CornerRadius = UDim.new(0, 10)
+    ksCorner.Parent = killSelectBar
+
+    killSelectBar.MouseEnter:Connect(function()
+        killSelectBar.BackgroundColor3 = COLORS.Gray
+    end)
+    killSelectBar.MouseLeave:Connect(function()
+        killSelectBar.BackgroundColor3 = COLORS.DarkGray
+    end)
+
+    killTargetLabel = Instance.new("TextLabel")
+    killTargetLabel.Size = UDim2.new(0.35, 0, 0, 36)
+    killTargetLabel.Position = UDim2.new(0.65, 0, 0.73, 0)
+    killTargetLabel.Text = "Nenhum"
+    killTargetLabel.TextColor3 = COLORS.White
+    killTargetLabel.BackgroundTransparency = 1
+    killTargetLabel.Font = Enum.Font.GothamBold
+    killTargetLabel.TextScaled = true
+    killTargetLabel.Parent = principalTab
+
+    killDropdownFrame = Instance.new("Frame")
+    killDropdownFrame.Size = UDim2.new(0.76, 0, 0.15, 0)
+    killDropdownFrame.Position = UDim2.new(0.12, 0, 0.81, 0)
+    killDropdownFrame.BackgroundColor3 = COLORS.DarkGray
+    killDropdownFrame.BackgroundTransparency = 0.1
+    killDropdownFrame.BorderSizePixel = 0
+    killDropdownFrame.Visible = false
+    killDropdownFrame.Parent = principalTab
+
+    local kdCorner = Instance.new("UICorner")
+    kdCorner.CornerRadius = UDim.new(0, 12)
+    kdCorner.Parent = killDropdownFrame
+
+    local killScroll = Instance.new("ScrollingFrame")
+    killScroll.Size = UDim2.new(1, 0, 1, 0)
+    killScroll.BackgroundTransparency = 1
+    killScroll.ScrollBarThickness = 2
+    killScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    killScroll.AutomaticCanvasSize = "Y"
+    killScroll.Parent = killDropdownFrame
+
+    local killLayout = Instance.new("UIListLayout")
+    killLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    killLayout.Parent = killScroll
+
+    killSelectBar.MouseButton1Click:Connect(function()
+        killDropdownFrame.Visible = not killDropdownFrame.Visible
+        if killDropdownFrame.Visible then refreshDropdown(killDropdownFrame) end
+    end)
+
+    -- Kill button
+    local killBtn = Instance.new("TextButton")
+    killBtn.Size = UDim2.new(0.35, 0, 0, 36)
+    killBtn.Position = UDim2.new(0.32, 0, 0.90, 0)
+    killBtn.Text = "💀 KILL"
+    killBtn.BackgroundColor3 = COLORS.Red
+    killBtn.TextColor3 = COLORS.White
+    killBtn.Font = Enum.Font.GothamBold
+    killBtn.TextScaled = true
+    killBtn.BorderSizePixel = 0
+    killBtn.AutoButtonColor = false
+    killBtn.Parent = principalTab
+
+    local killBtnCorner = Instance.new("UICorner")
+    killBtnCorner.CornerRadius = UDim.new(0, 12)
+    killBtnCorner.Parent = killBtn
+
+    killBtn.MouseEnter:Connect(function()
+        killBtn.BackgroundColor3 = COLORS.NeonRed
+    end)
+    killBtn.MouseLeave:Connect(function()
+        killBtn.BackgroundColor3 = COLORS.Red
+    end)
+
+    killBtn.MouseButton1Click:Connect(function()
+        if not killTargetPlayer then return end
+        local target = killTargetPlayer
+        local myChar = LocalPlayer.Character
+        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
+        local originalPos = myChar.HumanoidRootPart.CFrame
+
+        -- Pega o sofá
+        local sofa = workspace:FindFirstChild("Sofá") or game:GetService("ReplicatedStorage"):FindFirstChild("Sofá")
+        if not sofa or not sofa:IsA("Tool") then return end
+        local clonedSofa = sofa:Clone()
+        clonedSofa.Parent = LocalPlayer.Backpack
+        task.wait(0.1)
+        LocalPlayer.Character:WaitForChild("Humanoid"):EquipTool(clonedSofa)
+
+        -- Teleporta até o alvo
+        if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            myChar:SetPrimaryPartCFrame(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0))
+        end
+        task.wait(0.2)
+
+        -- Gira ao redor do alvo
+        local startTime = tick()
+        local angle = 0
+        local spinConn
+        spinConn = RunService.Heartbeat:Connect(function(delta)
+            if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+                spinConn:Disconnect()
+                return
+            end
+            angle = angle + delta * 5
+            local radius = 5
+            local offset = Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+            local targetPos = target.Character.HumanoidRootPart.Position
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                myChar:SetPrimaryPartCFrame(CFrame.new(targetPos + offset) * CFrame.Angles(0, angle, 0))
+            end
+
+            -- Detecta se o alvo sentou
+            if target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Sit then
+                spinConn:Disconnect()
+                -- Joga o alvo para longe
+                local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                if targetRoot then
+                    targetRoot.Velocity = Vector3.new(0, 500, 0) + (targetRoot.CFrame.LookVector * 200)
+                end
+                -- Retorna à posição original
+                task.wait(0.2)
+                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                    myChar:SetPrimaryPartCFrame(originalPos)
+                end
+            end
+        end)
+    end)
+
     local jogadorTab = Instance.new("Frame")
     jogadorTab.Name = "Jogador"
     jogadorTab.Size = UDim2.new(1, 0, 1, 0)
     jogadorTab.BackgroundTransparency = 1
     jogadorTab.Visible = false
     jogadorTab.Parent = mainArea
+
+    local currentWalkSpeed = 16
+    local currentJumpPower = 50
+    local currentGravity = 196.2
 
     local function applyPlayerStats()
         local char = LocalPlayer.Character
@@ -691,18 +875,10 @@ local function createMenu()
             if hum then
                 hum.WalkSpeed = currentWalkSpeed
                 hum.JumpPower = currentJumpPower
-                hum.HipHeight = 0
-            end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if root then
-                workspace.Gravity = currentGravity
             end
         end
+        workspace.Gravity = currentGravity
     end
-
-    local currentWalkSpeed = 16
-    local currentJumpPower = 50
-    local currentGravity = 196.2
 
     createSlider(jogadorTab, 0.05, "🏃 Velocidade", 0, 100, 16, function(val)
         currentWalkSpeed = val

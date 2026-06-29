@@ -1,10 +1,13 @@
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    repeat task.wait() until Players.LocalPlayer
+    LocalPlayer = Players.LocalPlayer
+end
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local COLORS = {
@@ -24,19 +27,29 @@ ScreenGui.Parent = PlayerGui
 local dragObject, dragStart, startPos
 local dragConnection
 
+local function isDescendantOf(obj, ancestor)
+    while obj do
+        if obj == ancestor then return true end
+        obj = obj.Parent
+    end
+    return false
+end
+
 local function makeDraggable(guiObject)
     guiObject.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputObject == guiObject then
-            dragObject = guiObject
-            startPos = guiObject.Position
-            dragStart = UserInputService:GetMouseLocation()
-            if dragConnection then dragConnection:Disconnect() end
-            dragConnection = input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragObject = nil
-                    if dragConnection then dragConnection:Disconnect(); dragConnection = nil end
-                end
-            end)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if input.UserInputObject and isDescendantOf(input.UserInputObject, guiObject) then
+                dragObject = guiObject
+                startPos = guiObject.Position
+                dragStart = UserInputService:GetMouseLocation()
+                if dragConnection then dragConnection:Disconnect() end
+                dragConnection = input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragObject = nil
+                        if dragConnection then dragConnection:Disconnect(); dragConnection = nil end
+                    end
+                end)
+            end
         end
     end)
 end
@@ -179,6 +192,27 @@ local function updateCamera()
         if viewConn then viewConn:Disconnect(); viewConn = nil end
         Camera.CameraSubject = LocalPlayer.Character
     end
+end
+
+local function findToolInGame(names)
+    local places = {workspace, game:GetService("ReplicatedStorage")}
+    for _, place in ipairs(places) do
+        for _, nm in ipairs(names) do
+            local obj = place:FindFirstChild(nm)
+            if obj and obj:IsA("Tool") then return obj end
+        end
+        local itensFolder = place:FindFirstChild("Itens")
+        if itensFolder then
+            for _, item in ipairs(itensFolder:GetChildren()) do
+                if item:IsA("Tool") then
+                    for _, nm in ipairs(names) do
+                        if item.Name == nm then return item end
+                    end
+                end
+            end
+        end
+    end
+    return nil
 end
 
 local function refreshDropdown(frame)
@@ -326,6 +360,7 @@ local function createSlider(parent, yPos, label, minVal, maxVal, default, callba
     container.Size = UDim2.new(0.9, 0, 0, 40)
     container.Position = UDim2.new(0.05, 0, yPos, 0)
     container.BackgroundTransparency = 1
+    container.Active = true
     container.Parent = parent
 
     local lbl = Instance.new("TextLabel")
@@ -364,6 +399,7 @@ local function createSlider(parent, yPos, label, minVal, maxVal, default, callba
     thumb.Text = ""
     thumb.BorderSizePixel = 0
     thumb.AutoButtonColor = false
+    thumb.Active = true
     thumb.Parent = track
     local thumbCorner = Instance.new("UICorner")
     thumbCorner.CornerRadius = UDim.new(1, 0)
@@ -528,15 +564,7 @@ local function createMenu()
     mainArea.Position = UDim2.new(0.15, 0, 0, 0)
     mainArea.BackgroundTransparency = 1
     mainArea.BorderSizePixel = 0
-    mainArea.Parent = menu
-
-    -- Créditos
-    local credTab = Instance.new("Frame")
-    credTab.Name = "Créditos"
-    credTab.Size = UDim2.new(1, 0, 1, 0)
-    credTab.BackgroundTransparency = 1
-    credTab.Visible = true
-    credTab.Parent = mainArea
+    mainArea.Parent = mainArea
 
     local credLabel = Instance.new("TextLabel")
     credLabel.Size = UDim2.new(1, -20, 1, -20)
@@ -550,7 +578,6 @@ local function createMenu()
     credLabel.TextYAlignment = Enum.TextYAlignment.Center
     credLabel.Parent = credTab
 
-    -- Principal
     local principalTab = Instance.new("Frame")
     principalTab.Name = "Principal"
     principalTab.Size = UDim2.new(1, 0, 1, 0)
@@ -558,7 +585,6 @@ local function createMenu()
     principalTab.Visible = false
     principalTab.Parent = mainArea
 
-    -- ========== KILL (Brookhaven) ==========
     local killTitle = Instance.new("TextLabel")
     killTitle.Size = UDim2.new(1, 0, 0, 25)
     killTitle.Position = UDim2.new(0.03, 0, 0.03, 0)
@@ -662,37 +688,7 @@ local function createMenu()
         if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
         local originalPos = myChar.HumanoidRootPart.CFrame
 
-        -- Procura sofá no padrão Brookhaven
-        local sofa = nil
-        local possibleNames = {"Sofá", "Sofa", "Couch"}
-        -- Procura no workspace (pasta Itens) e ReplicatedStorage
-        for _, place in ipairs({workspace, game:GetService("ReplicatedStorage")}) do
-            for _, nm in ipairs(possibleNames) do
-                local obj = place:FindFirstChild(nm)
-                if obj and obj:IsA("Tool") then
-                    sofa = obj
-                    break
-                end
-            end
-            if sofa then break end
-            -- Procura dentro de "Itens"
-            local itensFolder = place:FindFirstChild("Itens")
-            if itensFolder then
-                for _, item in ipairs(itensFolder:GetChildren()) do
-                    if item:IsA("Tool") then
-                        for _, nm in ipairs(possibleNames) do
-                            if item.Name == nm then
-                                sofa = item
-                                break
-                            end
-                        end
-                    end
-                    if sofa then break end
-                end
-            end
-            if sofa then break end
-        end
-
+        local sofa = findToolInGame({"Sofá", "Sofa", "Couch"})
         if not sofa then return end
 
         local clonedSofa = sofa:Clone()
@@ -702,23 +698,19 @@ local function createMenu()
             LocalPlayer.Character.Humanoid:EquipTool(clonedSofa)
         end
 
-        -- Teleporta até o alvo
         if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             myChar:SetPrimaryPartCFrame(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0))
         end
         task.wait(0.3)
 
-        -- Força o alvo a sentar no sofá (mecânica Brookhaven)
         local function forceSit()
             if target.Character and target.Character:FindFirstChild("Humanoid") then
                 target.Character.Humanoid.Sit = true
             end
         end
-        -- Tenta forçar depois de 0.5s e novamente após 1s
         task.delay(0.5, forceSit)
         task.delay(1.5, forceSit)
 
-        -- Gira ao redor do alvo
         local angle = 0
         local spinConn
         local sitDetected = false
@@ -727,12 +719,10 @@ local function createMenu()
                 spinConn:Disconnect()
                 return
             end
-            -- Verifica se o alvo sentou
             if target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Sit then
                 if not sitDetected then
                     sitDetected = true
                     spinConn:Disconnect()
-                    -- Joga o alvo para longe
                     local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                     if targetRoot then
                         targetRoot.Velocity = Vector3.new(0, 500, 0) + (targetRoot.CFrame.LookVector * 200)
@@ -754,7 +744,6 @@ local function createMenu()
         end)
     end)
 
-    -- ========== FLING (Brookhaven) ==========
     local flingTitle = Instance.new("TextLabel")
     flingTitle.Size = UDim2.new(1, 0, 0, 25)
     flingTitle.Position = UDim2.new(0.03, 0, 0.48, 0)
@@ -794,35 +783,7 @@ local function createMenu()
         local target = killTargetPlayer
         if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
 
-        -- Procura bola no padrão Brookhaven
-        local ball = nil
-        local ballNames = {"Bola", "Ball", "Bola de Futebol", "SoccerBall", "SportsBall"}
-        for _, place in ipairs({workspace, game:GetService("ReplicatedStorage")}) do
-            for _, nm in ipairs(ballNames) do
-                local obj = place:FindFirstChild(nm)
-                if obj and obj:IsA("Tool") then
-                    ball = obj
-                    break
-                end
-            end
-            if ball then break end
-            local itensFolder = place:FindFirstChild("Itens")
-            if itensFolder then
-                for _, item in ipairs(itensFolder:GetChildren()) do
-                    if item:IsA("Tool") then
-                        for _, nm in ipairs(ballNames) do
-                            if item.Name == nm then
-                                ball = item
-                                break
-                            end
-                        end
-                    end
-                    if ball then break end
-                end
-            end
-            if ball then break end
-        end
-
+        local ball = findToolInGame({"Bola", "Ball", "Bola de Futebol", "SoccerBall", "SportsBall"})
         if not ball then return end
 
         local clonedBall = ball:Clone()
@@ -832,20 +793,17 @@ local function createMenu()
         clonedBall.Handle.CanCollide = true
         clonedBall.Handle.Massless = false
 
-        -- Fixa a bola ao HumanoidRootPart
         local weld = Instance.new("Weld")
         weld.Part0 = clonedBall.Handle
         weld.Part1 = target.Character.HumanoidRootPart
         weld.Parent = clonedBall.Handle
 
-        -- Gira violentamente
         local spinVel = Instance.new("BodyAngularVelocity")
         spinVel.AngularVelocity = Vector3.new(0, 50, 0)
         spinVel.MaxTorque = Vector3.new(400000, 400000, 400000)
         spinVel.P = 1250
         spinVel.Parent = clonedBall.Handle
 
-        -- Remove após 5 segundos
         task.delay(5, function()
             if clonedBall and clonedBall.Parent then
                 clonedBall:Destroy()
@@ -853,7 +811,6 @@ local function createMenu()
         end)
     end)
 
-    -- ===== VIEW =====
     local viewToggle = Instance.new("TextButton")
     viewToggle.Size = UDim2.new(0.18, 0, 0, 36)
     viewToggle.Position = UDim2.new(0.03, 0, 0.65, 0)
@@ -936,7 +893,6 @@ local function createMenu()
         if dropdownFrame.Visible then refreshDropdown(dropdownFrame) end
     end)
 
-    -- ===== TELEPORT =====
     local teleLabel = Instance.new("TextLabel")
     teleLabel.Size = UDim2.new(0.15, 0, 0, 36)
     teleLabel.Position = UDim2.new(0.03, 0, 0.87, 0)
@@ -1001,7 +957,6 @@ local function createMenu()
         if teleDropdownFrame.Visible then refreshDropdown(teleDropdownFrame) end
     end)
 
-    -- Jogador (sliders)
     local jogadorTab = Instance.new("Frame")
     jogadorTab.Name = "Jogador"
     jogadorTab.Size = UDim2.new(1, 0, 1, 0)
@@ -1055,7 +1010,6 @@ local function createMenu()
         onCharacterAdded(LocalPlayer.Character)
     end
 
-    -- Armas
     local armasTab = Instance.new("Frame")
     armasTab.Name = "Armas"
     armasTab.Size = UDim2.new(1, 0, 1, 0)
@@ -1094,7 +1048,19 @@ local function createMenu()
     end)
 
     giveAllBtn.MouseButton1Click:Connect(function()
-        local giveAllRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Itens") then
+        local giveAllRemote = game:GetService("ReplicatedStorage"):FindFirstChild("GiveAllItems")
+        if giveAllRemote and giveAllRemote:IsA("RemoteEvent") then
+            giveAllRemote:FireServer(LocalPlayer)
+        else
+            local function grabFrom(loc)
+                for _, obj in ipairs(loc:GetChildren()) do
+                    if obj:IsA("Tool") then
+                        obj:Clone().Parent = LocalPlayer.Backpack
+                    end
+                end
+            end
+            grabFrom(game:GetService("ReplicatedStorage"))
+            if workspace:FindFirstChild("Itens") then
                 grabFrom(workspace.Itens)
             end
         end

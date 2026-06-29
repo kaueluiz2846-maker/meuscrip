@@ -19,6 +19,7 @@ ScreenGui.Name = "MenuK"
 ScreenGui.Parent = PlayerGui
 
 local dragObject, dragStart, startPos
+local dragConn
 
 local function makeDraggable(guiObject)
     guiObject.InputBegan:Connect(function(input)
@@ -26,9 +27,11 @@ local function makeDraggable(guiObject)
             dragObject = guiObject
             startPos = guiObject.Position
             dragStart = UserInputService:GetMouseLocation()
-            input.Changed:Connect(function()
+            if dragConn then dragConn:Disconnect() end
+            dragConn = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragObject = nil
+                    if dragConn then dragConn:Disconnect() end
                 end
             end)
         end
@@ -36,14 +39,12 @@ local function makeDraggable(guiObject)
 end
 
 UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        if dragObject then
-            local delta = UserInputService:GetMouseLocation() - dragStart
-            dragObject.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragObject then
+        local delta = UserInputService:GetMouseLocation() - dragStart
+        dragObject.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
@@ -138,55 +139,16 @@ contactLabel.TextScaled = true
 contactLabel.Parent = loginFrame
 
 local bubble = nil
-
-local function createBubble()
-    bubble = Instance.new("TextButton")
-    bubble.Size = UDim2.new(0, 60, 0, 60)
-    bubble.Position = UDim2.new(0.93, -30, 0.87, -30)
-    bubble.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    bubble.Text = "K"
-    bubble.TextColor3 = COLORS.White
-    bubble.Font = Enum.Font.GothamBold
-    bubble.TextScaled = true
-    bubble.AutoButtonColor = false
-    bubble.BorderSizePixel = 0
-    bubble.Parent = ScreenGui
-    makeDraggable(bubble)
-
-    local bubbleCorner = Instance.new("UICorner")
-    bubbleCorner.CornerRadius = UDim.new(1, 0)
-    bubbleCorner.Parent = bubble
-
-    local bubbleStroke = Instance.new("UIStroke")
-    bubbleStroke.Color = COLORS.NeonRed
-    bubbleStroke.Thickness = 3
-    bubbleStroke.Transparency = 0.3
-    bubbleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    bubbleStroke.Parent = bubble
-
-    local glow = Instance.new("Frame")
-    glow.Size = UDim2.new(1.5, 0, 1.5, 0)
-    glow.Position = UDim2.new(-0.25, 0, -0.25, 0)
-    glow.BackgroundColor3 = COLORS.NeonRed
-    glow.BackgroundTransparency = 0.85
-    glow.BorderSizePixel = 0
-    glow.ZIndex = 0
-    glow.Parent = bubble
-    local glowCorner = Instance.new("UICorner")
-    glowCorner.CornerRadius = UDim.new(1, 0)
-    glowCorner.Parent = glow
-
-    bubble.MouseButton1Click:Connect(toggleMenu)
-end
-
 local menu = nil
 local menuOpen = false
 local currentTab = "Créditos"
 local selectedPlayer = nil
 local viewEnabled = false
+local viewConn
 local dropdownFrame, teleDropdownFrame, mainArea, sidebarBtns = {}, {}
 
 function toggleMenu()
+    if not menu then return end
     if not menuOpen then
         menu.Visible = true
         menu:TweenSize(UDim2.new(0.8, 0, 0.75, 0), "Out", "Quad", 0.25, true)
@@ -199,7 +161,6 @@ function toggleMenu()
     end
 end
 
-local viewConn
 local function updateCamera()
     if viewEnabled and selectedPlayer then
         if viewConn then viewConn:Disconnect() end
@@ -299,6 +260,46 @@ function onTabClick(tab)
     if tab == "Principal" then
         refreshDropdown(dropdownFrame)
     end
+end
+
+local function createBubble()
+    bubble = Instance.new("TextButton")
+    bubble.Size = UDim2.new(0, 60, 0, 60)
+    bubble.Position = UDim2.new(0.93, -30, 0.87, -30)
+    bubble.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    bubble.Text = "K"
+    bubble.TextColor3 = COLORS.White
+    bubble.Font = Enum.Font.GothamBold
+    bubble.TextScaled = true
+    bubble.AutoButtonColor = false
+    bubble.BorderSizePixel = 0
+    bubble.Parent = ScreenGui
+    makeDraggable(bubble)
+
+    local bubbleCorner = Instance.new("UICorner")
+    bubbleCorner.CornerRadius = UDim.new(1, 0)
+    bubbleCorner.Parent = bubble
+
+    local bubbleStroke = Instance.new("UIStroke")
+    bubbleStroke.Color = COLORS.NeonRed
+    bubbleStroke.Thickness = 3
+    bubbleStroke.Transparency = 0.3
+    bubbleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    bubbleStroke.Parent = bubble
+
+    local glow = Instance.new("Frame")
+    glow.Size = UDim2.new(1.5, 0, 1.5, 0)
+    glow.Position = UDim2.new(-0.25, 0, -0.25, 0)
+    glow.BackgroundColor3 = COLORS.NeonRed
+    glow.BackgroundTransparency = 0.85
+    glow.BorderSizePixel = 0
+    glow.ZIndex = 0
+    glow.Parent = bubble
+    local glowCorner = Instance.new("UICorner")
+    glowCorner.CornerRadius = UDim.new(1, 0)
+    glowCorner.Parent = glow
+
+    bubble.MouseButton1Click:Connect(toggleMenu)
 end
 
 local function createMenu()
@@ -639,10 +640,3 @@ verifyBtn.MouseButton1Click:Connect(function()
         errorLabel.Visible = false
     end
 end)
-
-bubble = nil
-menu = nil
-menuOpen = false
-currentTab = "Créditos"
-selectedPlayer = nil
-viewEnabled = false

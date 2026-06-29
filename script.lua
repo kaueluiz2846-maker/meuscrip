@@ -48,8 +48,8 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local loginFrame = Instance.new("Frame")
-loginFrame.Size = UDim2.new(0, 400, 0, 280)
-loginFrame.Position = UDim2.new(0.5, -200, 0.4, -140)
+loginFrame.Size = UDim2.new(0, 420, 0, 300)
+loginFrame.Position = UDim2.new(0.5, -210, 0.4, -150)
 loginFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 loginFrame.BackgroundTransparency = 0.05
 loginFrame.BorderSizePixel = 0
@@ -57,7 +57,7 @@ loginFrame.Parent = ScreenGui
 makeDraggable(loginFrame)
 
 local loginCorner = Instance.new("UICorner")
-loginCorner.CornerRadius = UDim.new(0, 20)
+loginCorner.CornerRadius = UDim.new(0, 22)
 loginCorner.Parent = loginFrame
 
 local loginStroke = Instance.new("UIStroke")
@@ -71,7 +71,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0.2, 0)
 titleLabel.Position = UDim2.new(0, 0, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "🔑 LOGIN"
+titleLabel.Text = "🔑 VERIFICAÇÃO DE CHAVE"
 titleLabel.TextColor3 = COLORS.White
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextScaled = true
@@ -127,6 +127,16 @@ errorLabel.TextScaled = true
 errorLabel.Visible = false
 errorLabel.Parent = loginFrame
 
+local contactLabel = Instance.new("TextLabel")
+contactLabel.Size = UDim2.new(1, 0, 0.1, 0)
+contactLabel.Position = UDim2.new(0, 0, 0.78, 0)
+contactLabel.Text = "Não tem uma chave? Contate o criador"
+contactLabel.TextColor3 = COLORS.Black
+contactLabel.BackgroundTransparency = 1
+contactLabel.Font = Enum.Font.Gotham
+contactLabel.TextScaled = true
+contactLabel.Parent = loginFrame
+
 local bubble = nil
 
 local function createBubble()
@@ -172,7 +182,9 @@ end
 local menu = nil
 local menuOpen = false
 local currentTab = "Créditos"
-local mainArea, sidebarBtns = {}, {}
+local selectedPlayer = nil
+local viewEnabled = false
+local dropdownFrame, teleDropdownFrame, mainArea, sidebarBtns = {}, {}
 
 function toggleMenu()
     if not menuOpen then
@@ -187,10 +199,95 @@ function toggleMenu()
     end
 end
 
+local viewConn
+local function updateCamera()
+    if viewEnabled and selectedPlayer then
+        if viewConn then viewConn:Disconnect() end
+        if selectedPlayer.Character then
+            Camera.CameraSubject = selectedPlayer.Character
+        end
+        viewConn = selectedPlayer.CharacterAdded:Connect(function(char)
+            Camera.CameraSubject = char
+        end)
+    else
+        if viewConn then viewConn:Disconnect(); viewConn = nil end
+        Camera.CameraSubject = LocalPlayer.Character
+    end
+end
+
+local function refreshDropdown(frame)
+    if not frame then return end
+    local scroll = frame.ScrollingFrame
+    for _, v in ipairs(scroll:GetChildren()) do
+        if v:IsA("TextButton") then v:Destroy() end
+    end
+    local sorted = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        table.insert(sorted, p.Name)
+    end
+    table.sort(sorted)
+    if #sorted == 0 then
+        local empty = Instance.new("TextLabel")
+        empty.Size = UDim2.new(1, 0, 0, 30)
+        empty.Text = "Sem jogadores"
+        empty.TextColor3 = COLORS.Black
+        empty.BackgroundTransparency = 1
+        empty.Font = Enum.Font.Gotham
+        empty.TextScaled = true
+        empty.Parent = scroll
+    else
+        for _, name in ipairs(sorted) do
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 30)
+            btn.Text = name
+            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            btn.TextColor3 = COLORS.White
+            btn.Font = Enum.Font.Gotham
+            btn.TextScaled = true
+            btn.BorderSizePixel = 0
+            btn.Parent = scroll
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(0, 6)
+            btnCorner.Parent = btn
+            btn.MouseEnter:Connect(function()
+                btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+            end)
+            btn.MouseLeave:Connect(function()
+                btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            end)
+            btn.MouseButton1Click:Connect(function()
+                if frame == dropdownFrame then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p.Name == name then
+                            selectedPlayer = p
+                            break
+                        end
+                    end
+                    sidebarBtns.selectBar.Text = name
+                    dropdownFrame.Visible = false
+                    if viewEnabled then updateCamera() end
+                elseif frame == teleDropdownFrame then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p.Name == name and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                LocalPlayer.Character:SetPrimaryPartCFrame(p.Character.HumanoidRootPart.CFrame)
+                            elseif LocalPlayer.Character then
+                                LocalPlayer.Character:MoveTo(p.Character.HumanoidRootPart.Position)
+                            end
+                            break
+                        end
+                    end
+                    teleDropdownFrame.Visible = false
+                end
+            end)
+        end
+    end
+end
+
 function onTabClick(tab)
     currentTab = tab
     for name, btn in pairs(sidebarBtns) do
-        if type(btn) == "userdata" then
+        if type(btn) == "userdata" and name ~= "selectBar" and name ~= "teleportBar" then
             btn.BackgroundColor3 = (name == tab) and COLORS.Red or Color3.fromRGB(35, 35, 35)
         end
     end
@@ -198,6 +295,9 @@ function onTabClick(tab)
         if content:IsA("Frame") then
             content.Visible = (content.Name == tab)
         end
+    end
+    if tab == "Principal" then
+        refreshDropdown(dropdownFrame)
     end
 end
 
@@ -254,7 +354,7 @@ local function createMenu()
     sidebarPadding.Parent = sidebarScroll
 
     local tabs = {"Créditos", "Principal", "Armas"}
-    local icons = {["Créditos"] = "📄", ["Principal"] = "👤", ["Armas"] = "🔫"}
+    local icons = {["Créditos"] = "📄", ["Principal"] = "⚡", ["Armas"] = "🔫"}
     sidebarBtns = {}
 
     for _, tab in ipairs(tabs) do
@@ -323,91 +423,151 @@ local function createMenu()
     principalTab.Visible = false
     principalTab.Parent = mainArea
 
-    local titleP = Instance.new("TextLabel")
-    titleP.Size = UDim2.new(1, 0, 0.1, 0)
-    titleP.Position = UDim2.new(0, 0, 0.02, 0)
-    titleP.BackgroundTransparency = 1
-    titleP.Text = "⚡ FUNÇÕES PRINCIPAIS"
-    titleP.TextColor3 = COLORS.White
-    titleP.Font = Enum.Font.GothamBold
-    titleP.TextScaled = true
-    titleP.TextXAlignment = Enum.TextXAlignment.Center
-    titleP.Parent = principalTab
+    local viewToggle = Instance.new("TextButton")
+    viewToggle.Size = UDim2.new(0.18, 0, 0, 34)
+    viewToggle.Position = UDim2.new(0.05, 0, 0.05, 0)
+    viewToggle.Text = "👁️ View: OFF"
+    viewToggle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    viewToggle.TextColor3 = COLORS.White
+    viewToggle.Font = Enum.Font.Gotham
+    viewToggle.TextScaled = true
+    viewToggle.BorderSizePixel = 0
+    viewToggle.Parent = principalTab
 
-    local btnConfig = {
-        {text = "Auto Farm", pos = 0.15},
-        {text = "Auto Quest", pos = 0.30},
-        {text = "Auto Boss", pos = 0.45},
-        {text = "Coletar Itens", pos = 0.60}
-    }
+    local vtCorner = Instance.new("UICorner")
+    vtCorner.CornerRadius = UDim.new(0, 10)
+    vtCorner.Parent = viewToggle
 
-    for _, info in ipairs(btnConfig) do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.5, 0, 0.08, 0)
-        btn.Position = UDim2.new(0.25, 0, info.pos, 0)
-        btn.Text = info.text
-        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-        btn.TextColor3 = COLORS.White
-        btn.Font = Enum.Font.GothamBold
-        btn.TextScaled = true
-        btn.BorderSizePixel = 0
-        btn.Parent = principalTab
+    viewToggle.MouseEnter:Connect(function()
+        if not viewEnabled then viewToggle.BackgroundColor3 = Color3.fromRGB(55, 55, 55) end
+    end)
+    viewToggle.MouseLeave:Connect(function()
+        if not viewEnabled then viewToggle.BackgroundColor3 = Color3.fromRGB(35, 35, 35) end
+    end)
 
-        local bCorner = Instance.new("UICorner")
-        bCorner.CornerRadius = UDim.new(0, 12)
-        bCorner.Parent = btn
+    viewToggle.MouseButton1Click:Connect(function()
+        viewEnabled = not viewEnabled
+        viewToggle.Text = "👁️ View: " .. (viewEnabled and "ON" or "OFF")
+        viewToggle.BackgroundColor3 = viewEnabled and COLORS.Red or Color3.fromRGB(35, 35, 35)
+        updateCamera()
+    end)
 
-        btn.MouseEnter:Connect(function()
-            btn.BackgroundColor3 = COLORS.Red
-        end)
-        btn.MouseLeave:Connect(function()
-            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-        end)
-    end
+    local selectBar = Instance.new("TextButton")
+    selectBar.Size = UDim2.new(0.65, 0, 0, 34)
+    selectBar.Position = UDim2.new(0.27, 0, 0.05, 0)
+    selectBar.Text = "Selecionar jogador"
+    selectBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    selectBar.TextColor3 = COLORS.White
+    selectBar.Font = Enum.Font.Gotham
+    selectBar.TextScaled = true
+    selectBar.BorderSizePixel = 0
+    selectBar.Parent = principalTab
+
+    local selCorner = Instance.new("UICorner")
+    selCorner.CornerRadius = UDim.new(0, 10)
+    selCorner.Parent = selectBar
+
+    selectBar.MouseEnter:Connect(function()
+        selectBar.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    end)
+    selectBar.MouseLeave:Connect(function()
+        selectBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    end)
+
+    sidebarBtns.selectBar = selectBar
+
+    dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Size = UDim2.new(0.8, 0, 0.22, 0)
+    dropdownFrame.Position = UDim2.new(0.1, 0, 0.16, 0)
+    dropdownFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    dropdownFrame.BackgroundTransparency = 0.1
+    dropdownFrame.BorderSizePixel = 0
+    dropdownFrame.Visible = false
+    dropdownFrame.Parent = principalTab
+
+    local ddCorner = Instance.new("UICorner")
+    ddCorner.CornerRadius = UDim.new(0, 12)
+    ddCorner.Parent = dropdownFrame
+
+    local dropScroll = Instance.new("ScrollingFrame")
+    dropScroll.Size = UDim2.new(1, 0, 1, 0)
+    dropScroll.BackgroundTransparency = 1
+    dropScroll.ScrollBarThickness = 2
+    dropScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    dropScroll.AutomaticCanvasSize = "Y"
+    dropScroll.Parent = dropdownFrame
+
+    local dropLayout = Instance.new("UIListLayout")
+    dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    dropLayout.Parent = dropScroll
+
+    selectBar.MouseButton1Click:Connect(function()
+        dropdownFrame.Visible = not dropdownFrame.Visible
+        if dropdownFrame.Visible then refreshDropdown(dropdownFrame) end
+    end)
 
     local teleLabel = Instance.new("TextLabel")
-    teleLabel.Size = UDim2.new(1, 0, 0.08, 0)
-    teleLabel.Position = UDim2.new(0, 0, 0.75, 0)
-    teleLabel.BackgroundTransparency = 1
-    teleLabel.Text = "📌 TELEPORTE"
+    teleLabel.Size = UDim2.new(0.12, 0, 0, 34)
+    teleLabel.Position = UDim2.new(0.05, 0, 0.40, 0)
+    teleLabel.Text = "📌 Tele:"
     teleLabel.TextColor3 = COLORS.White
+    teleLabel.BackgroundTransparency = 1
     teleLabel.Font = Enum.Font.GothamBold
     teleLabel.TextScaled = true
-    teleLabel.TextXAlignment = Enum.TextXAlignment.Center
     teleLabel.Parent = principalTab
 
-    local teleportBtn = Instance.new("TextButton")
-    teleportBtn.Size = UDim2.new(0.4, 0, 0.08, 0)
-    teleportBtn.Position = UDim2.new(0.3, 0, 0.85, 0)
-    teleportBtn.Text = "TELEPORTAR"
-    teleportBtn.BackgroundColor3 = COLORS.Red
-    teleportBtn.TextColor3 = COLORS.White
-    teleportBtn.Font = Enum.Font.GothamBold
-    teleportBtn.TextScaled = true
-    teleportBtn.BorderSizePixel = 0
-    teleportBtn.Parent = principalTab
+    local teleportBar = Instance.new("TextButton")
+    teleportBar.Size = UDim2.new(0.65, 0, 0, 34)
+    teleportBar.Position = UDim2.new(0.20, 0, 0.40, 0)
+    teleportBar.Text = "Jogador"
+    teleportBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    teleportBar.TextColor3 = COLORS.White
+    teleportBar.Font = Enum.Font.Gotham
+    teleportBar.TextScaled = true
+    teleportBar.BorderSizePixel = 0
+    teleportBar.Parent = principalTab
 
     local tpCorner = Instance.new("UICorner")
-    tpCorner.CornerRadius = UDim.new(0, 12)
-    tpCorner.Parent = teleportBtn
+    tpCorner.CornerRadius = UDim.new(0, 10)
+    tpCorner.Parent = teleportBar
 
-    teleportBtn.MouseEnter:Connect(function()
-        teleportBtn.BackgroundColor3 = COLORS.NeonRed
+    teleportBar.MouseEnter:Connect(function()
+        teleportBar.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
     end)
-    teleportBtn.MouseLeave:Connect(function()
-        teleportBtn.BackgroundColor3 = COLORS.Red
+    teleportBar.MouseLeave:Connect(function()
+        teleportBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     end)
 
-    teleportBtn.MouseButton1Click:Connect(function()
-        local targets = workspace:GetChildren()
-        for _, obj in ipairs(targets) do
-            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character:SetPrimaryPartCFrame(obj.HumanoidRootPart.CFrame)
-                    break
-                end
-            end
-        end
+    sidebarBtns.teleportBar = teleportBar
+
+    teleDropdownFrame = Instance.new("Frame")
+    teleDropdownFrame.Size = UDim2.new(0.8, 0, 0.22, 0)
+    teleDropdownFrame.Position = UDim2.new(0.1, 0, 0.48, 0)
+    teleDropdownFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    teleDropdownFrame.BackgroundTransparency = 0.1
+    teleDropdownFrame.BorderSizePixel = 0
+    teleDropdownFrame.Visible = false
+    teleDropdownFrame.Parent = principalTab
+
+    local tpdCorner = Instance.new("UICorner")
+    tpdCorner.CornerRadius = UDim.new(0, 12)
+    tpdCorner.Parent = teleDropdownFrame
+
+    local teleScroll = Instance.new("ScrollingFrame")
+    teleScroll.Size = UDim2.new(1, 0, 1, 0)
+    teleScroll.BackgroundTransparency = 1
+    teleScroll.ScrollBarThickness = 2
+    teleScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    teleScroll.AutomaticCanvasSize = "Y"
+    teleScroll.Parent = teleDropdownFrame
+
+    local teleLayout = Instance.new("UIListLayout")
+    teleLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    teleLayout.Parent = teleScroll
+
+    teleportBar.MouseButton1Click:Connect(function()
+        teleDropdownFrame.Visible = not teleDropdownFrame.Visible
+        if teleDropdownFrame.Visible then refreshDropdown(teleDropdownFrame) end
     end)
 
     local armasTab = Instance.new("Frame")
@@ -484,3 +644,5 @@ bubble = nil
 menu = nil
 menuOpen = false
 currentTab = "Créditos"
+selectedPlayer = nil
+viewEnabled = false

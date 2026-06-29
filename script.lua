@@ -4,10 +4,6 @@ local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
-if not LocalPlayer then
-    repeat task.wait() until Players.LocalPlayer
-    LocalPlayer = Players.LocalPlayer
-end
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local COLORS = {
@@ -24,6 +20,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MenuK"
 ScreenGui.Parent = PlayerGui
 
+-- ==================== ARRASTE ====================
 local dragObject, dragStart, startPos
 local dragConnection
 
@@ -64,9 +61,10 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- ==================== TELA DE LOGIN (PEQUENA) ====================
 local loginFrame = Instance.new("Frame")
-loginFrame.Size = UDim2.new(0, 280, 0, 230)
-loginFrame.Position = UDim2.new(0.5, -140, 0.4, -115)
+loginFrame.Size = UDim2.new(0, 240, 0, 200)
+loginFrame.Position = UDim2.new(0.5, -120, 0.4, -100)
 loginFrame.BackgroundColor3 = COLORS.Black
 loginFrame.BackgroundTransparency = 0.1
 loginFrame.BorderSizePixel = 0
@@ -82,12 +80,12 @@ loginStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 loginStroke.Parent = loginFrame
 
 local loginCorner = Instance.new("UICorner")
-loginCorner.CornerRadius = UDim.new(0, 18)
+loginCorner.CornerRadius = UDim.new(0, 15)
 loginCorner.Parent = loginFrame
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -20, 0, 40)
-titleLabel.Position = UDim2.new(0, 10, 0, 10)
+titleLabel.Size = UDim2.new(1, -20, 0, 35)
+titleLabel.Position = UDim2.new(0, 10, 0, 8)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "🔑 VERIFICAÇÃO DE CHAVE"
 titleLabel.TextColor3 = COLORS.White
@@ -97,8 +95,8 @@ titleLabel.TextXAlignment = Enum.TextXAlignment.Center
 titleLabel.Parent = loginFrame
 
 local codeBox = Instance.new("TextBox")
-codeBox.Size = UDim2.new(0.85, 0, 0, 40)
-codeBox.Position = UDim2.new(0.075, 0, 0, 60)
+codeBox.Size = UDim2.new(0.85, 0, 0, 35)
+codeBox.Position = UDim2.new(0.075, 0, 0, 50)
 codeBox.BackgroundColor3 = COLORS.DarkGray
 codeBox.TextColor3 = COLORS.White
 codeBox.PlaceholderText = "Digite sua chave..."
@@ -110,12 +108,12 @@ codeBox.ClearTextOnFocus = false
 codeBox.Parent = loginFrame
 
 local codeCorner = Instance.new("UICorner")
-codeCorner.CornerRadius = UDim.new(0, 12)
+codeCorner.CornerRadius = UDim.new(0, 10)
 codeCorner.Parent = codeBox
 
 local verifyBtn = Instance.new("TextButton")
-verifyBtn.Size = UDim2.new(0.85, 0, 0, 40)
-verifyBtn.Position = UDim2.new(0.075, 0, 0, 115)
+verifyBtn.Size = UDim2.new(0.85, 0, 0, 35)
+verifyBtn.Position = UDim2.new(0.075, 0, 0, 95)
 verifyBtn.Text = "VERIFICAR"
 verifyBtn.BackgroundColor3 = COLORS.Red
 verifyBtn.TextColor3 = COLORS.White
@@ -126,7 +124,7 @@ verifyBtn.AutoButtonColor = false
 verifyBtn.Parent = loginFrame
 
 local verifyCorner = Instance.new("UICorner")
-verifyCorner.CornerRadius = UDim.new(0, 12)
+verifyCorner.CornerRadius = UDim.new(0, 10)
 verifyCorner.Parent = verifyBtn
 
 verifyBtn.MouseEnter:Connect(function()
@@ -137,8 +135,8 @@ verifyBtn.MouseLeave:Connect(function()
 end)
 
 local errorLabel = Instance.new("TextLabel")
-errorLabel.Size = UDim2.new(0.85, 0, 0, 25)
-errorLabel.Position = UDim2.new(0.075, 0, 0, 165)
+errorLabel.Size = UDim2.new(0.85, 0, 0, 20)
+errorLabel.Position = UDim2.new(0.075, 0, 0, 138)
 errorLabel.Text = "❌ Chave inválida!"
 errorLabel.TextColor3 = COLORS.NeonRed
 errorLabel.BackgroundTransparency = 1
@@ -148,8 +146,8 @@ errorLabel.Visible = false
 errorLabel.Parent = loginFrame
 
 local contactLabel = Instance.new("TextLabel")
-contactLabel.Size = UDim2.new(0.85, 0, 0, 25)
-contactLabel.Position = UDim2.new(0.075, 0, 0, 195)
+contactLabel.Size = UDim2.new(0.85, 0, 0, 20)
+contactLabel.Position = UDim2.new(0.075, 0, 0, 165)
 contactLabel.Text = "Não tem uma chave? Contate o criador"
 contactLabel.TextColor3 = COLORS.LightGray
 contactLabel.BackgroundTransparency = 1
@@ -157,6 +155,7 @@ contactLabel.Font = Enum.Font.Gotham
 contactLabel.TextScaled = true
 contactLabel.Parent = loginFrame
 
+-- ==================== VARIÁVEIS ====================
 local bubble, menu, menuOpen
 local currentTab = "Créditos"
 local selectedPlayer, viewEnabled, viewConn
@@ -165,6 +164,7 @@ local killTargetPlayer = nil
 local killTargetLabel = nil
 local killDropdownFrame = nil
 
+-- ==================== FUNÇÕES ====================
 function toggleMenu()
     if not menu then return end
     if not menuOpen then
@@ -492,6 +492,7 @@ local function createMenu()
     menuStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     menuStroke.Parent = menu
 
+    -- Sidebar
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0.15, 0, 1, 0)
     sidebar.BackgroundColor3 = COLORS.DarkGray
@@ -564,12 +565,20 @@ local function createMenu()
     mainArea.Position = UDim2.new(0.15, 0, 0, 0)
     mainArea.BackgroundTransparency = 1
     mainArea.BorderSizePixel = 0
-    mainArea.Parent = mainArea
+    mainArea.Parent = menu
+
+    -- Créditos
+    local credTab = Instance.new("Frame")
+    credTab.Name = "Créditos"
+    credTab.Size = UDim2.new(1, 0, 1, 0)
+    credTab.BackgroundTransparency = 1
+    credTab.Visible = true
+    credTab.Parent = mainArea
 
     local credLabel = Instance.new("TextLabel")
     credLabel.Size = UDim2.new(1, -20, 1, -20)
     credLabel.Position = UDim2.new(0, 10, 0, 10)
-    credLabel.Text = "Criado por kkscript\n⚡ Interface moderna com cores exclusivas"
+    credLabel.Text = "Criado por kkscript\n⚡ Interface moderna"
     credLabel.TextColor3 = COLORS.White
     credLabel.BackgroundTransparency = 1
     credLabel.Font = Enum.Font.GothamBold
@@ -578,6 +587,7 @@ local function createMenu()
     credLabel.TextYAlignment = Enum.TextYAlignment.Center
     credLabel.Parent = credTab
 
+    -- Principal
     local principalTab = Instance.new("Frame")
     principalTab.Name = "Principal"
     principalTab.Size = UDim2.new(1, 0, 1, 0)
@@ -585,9 +595,10 @@ local function createMenu()
     principalTab.Visible = false
     principalTab.Parent = mainArea
 
+    -- Matar
     local killTitle = Instance.new("TextLabel")
-    killTitle.Size = UDim2.new(1, 0, 0, 25)
-    killTitle.Position = UDim2.new(0.03, 0, 0.03, 0)
+    killTitle.Size = UDim2.new(1, 0, 0, 20)
+    killTitle.Position = UDim2.new(0.03, 0, 0.02, 0)
     killTitle.Text = "🎯 Matar"
     killTitle.TextColor3 = COLORS.NeonRed
     killTitle.BackgroundTransparency = 1
@@ -597,8 +608,8 @@ local function createMenu()
     killTitle.Parent = principalTab
 
     local killSelectBar = Instance.new("TextButton")
-    killSelectBar.Size = UDim2.new(0.6, 0, 0, 36)
-    killSelectBar.Position = UDim2.new(0.03, 0, 0.1, 0)
+    killSelectBar.Size = UDim2.new(0.55, 0, 0, 32)
+    killSelectBar.Position = UDim2.new(0.03, 0, 0.08, 0)
     killSelectBar.Text = "Selecionar alvo"
     killSelectBar.BackgroundColor3 = COLORS.DarkGray
     killSelectBar.TextColor3 = COLORS.White
@@ -608,7 +619,7 @@ local function createMenu()
     killSelectBar.Parent = principalTab
 
     local ksCorner = Instance.new("UICorner")
-    ksCorner.CornerRadius = UDim.new(0, 10)
+    ksCorner.CornerRadius = UDim.new(0, 8)
     ksCorner.Parent = killSelectBar
 
     killSelectBar.MouseEnter:Connect(function()
@@ -619,8 +630,8 @@ local function createMenu()
     end)
 
     killTargetLabel = Instance.new("TextLabel")
-    killTargetLabel.Size = UDim2.new(0.3, 0, 0, 36)
-    killTargetLabel.Position = UDim2.new(0.65, 0, 0.1, 0)
+    killTargetLabel.Size = UDim2.new(0.35, 0, 0, 32)
+    killTargetLabel.Position = UDim2.new(0.6, 0, 0.08, 0)
     killTargetLabel.Text = "Nenhum"
     killTargetLabel.TextColor3 = COLORS.White
     killTargetLabel.BackgroundTransparency = 1
@@ -629,8 +640,8 @@ local function createMenu()
     killTargetLabel.Parent = principalTab
 
     killDropdownFrame = Instance.new("Frame")
-    killDropdownFrame.Size = UDim2.new(0.6, 0, 0.18, 0)
-    killDropdownFrame.Position = UDim2.new(0.03, 0, 0.2, 0)
+    killDropdownFrame.Size = UDim2.new(0.6, 0, 0.15, 0)
+    killDropdownFrame.Position = UDim2.new(0.03, 0, 0.18, 0)
     killDropdownFrame.BackgroundColor3 = COLORS.DarkGray
     killDropdownFrame.BackgroundTransparency = 0.1
     killDropdownFrame.BorderSizePixel = 0
@@ -638,7 +649,7 @@ local function createMenu()
     killDropdownFrame.Parent = principalTab
 
     local kdCorner = Instance.new("UICorner")
-    kdCorner.CornerRadius = UDim.new(0, 12)
+    kdCorner.CornerRadius = UDim.new(0, 10)
     kdCorner.Parent = killDropdownFrame
 
     local killScroll = Instance.new("ScrollingFrame")
@@ -659,8 +670,8 @@ local function createMenu()
     end)
 
     local killBtn = Instance.new("TextButton")
-    killBtn.Size = UDim2.new(0.4, 0, 0, 36)
-    killBtn.Position = UDim2.new(0.03, 0, 0.39, 0)
+    killBtn.Size = UDim2.new(0.4, 0, 0, 32)
+    killBtn.Position = UDim2.new(0.03, 0, 0.36, 0)
     killBtn.Text = "💀 KILL"
     killBtn.BackgroundColor3 = COLORS.Red
     killBtn.TextColor3 = COLORS.White
@@ -671,7 +682,7 @@ local function createMenu()
     killBtn.Parent = principalTab
 
     local killBtnCorner = Instance.new("UICorner")
-    killBtnCorner.CornerRadius = UDim.new(0, 12)
+    killBtnCorner.CornerRadius = UDim.new(0, 10)
     killBtnCorner.Parent = killBtn
 
     killBtn.MouseEnter:Connect(function()
@@ -744,9 +755,10 @@ local function createMenu()
         end)
     end)
 
+    -- Fling
     local flingTitle = Instance.new("TextLabel")
-    flingTitle.Size = UDim2.new(1, 0, 0, 25)
-    flingTitle.Position = UDim2.new(0.03, 0, 0.48, 0)
+    flingTitle.Size = UDim2.new(1, 0, 0, 20)
+    flingTitle.Position = UDim2.new(0.03, 0, 0.45, 0)
     flingTitle.Text = "🌀 Fling"
     flingTitle.TextColor3 = COLORS.NeonRed
     flingTitle.BackgroundTransparency = 1
@@ -756,8 +768,8 @@ local function createMenu()
     flingTitle.Parent = principalTab
 
     local flingBtn = Instance.new("TextButton")
-    flingBtn.Size = UDim2.new(0.4, 0, 0, 36)
-    flingBtn.Position = UDim2.new(0.03, 0, 0.55, 0)
+    flingBtn.Size = UDim2.new(0.4, 0, 0, 32)
+    flingBtn.Position = UDim2.new(0.03, 0, 0.52, 0)
     flingBtn.Text = "Ativar Fling"
     flingBtn.BackgroundColor3 = COLORS.Red
     flingBtn.TextColor3 = COLORS.White
@@ -768,7 +780,7 @@ local function createMenu()
     flingBtn.Parent = principalTab
 
     local flingCorner = Instance.new("UICorner")
-    flingCorner.CornerRadius = UDim.new(0, 12)
+    flingCorner.CornerRadius = UDim.new(0, 10)
     flingCorner.Parent = flingBtn
 
     flingBtn.MouseEnter:Connect(function()
@@ -811,9 +823,10 @@ local function createMenu()
         end)
     end)
 
+    -- View
     local viewToggle = Instance.new("TextButton")
-    viewToggle.Size = UDim2.new(0.18, 0, 0, 36)
-    viewToggle.Position = UDim2.new(0.03, 0, 0.65, 0)
+    viewToggle.Size = UDim2.new(0.18, 0, 0, 32)
+    viewToggle.Position = UDim2.new(0.03, 0, 0.62, 0)
     viewToggle.Text = "👁️ View: OFF"
     viewToggle.BackgroundColor3 = COLORS.DarkGray
     viewToggle.TextColor3 = COLORS.White
@@ -823,7 +836,7 @@ local function createMenu()
     viewToggle.Parent = principalTab
 
     local vtCorner = Instance.new("UICorner")
-    vtCorner.CornerRadius = UDim.new(0, 10)
+    vtCorner.CornerRadius = UDim.new(0, 8)
     vtCorner.Parent = viewToggle
 
     viewToggle.MouseEnter:Connect(function()
@@ -840,8 +853,8 @@ local function createMenu()
     end)
 
     local selectBar = Instance.new("TextButton")
-    selectBar.Size = UDim2.new(0.65, 0, 0, 36)
-    selectBar.Position = UDim2.new(0.24, 0, 0.65, 0)
+    selectBar.Size = UDim2.new(0.55, 0, 0, 32)
+    selectBar.Position = UDim2.new(0.24, 0, 0.62, 0)
     selectBar.Text = "Selecionar jogador"
     selectBar.BackgroundColor3 = COLORS.DarkGray
     selectBar.TextColor3 = COLORS.White
@@ -851,7 +864,7 @@ local function createMenu()
     selectBar.Parent = principalTab
 
     local selCorner = Instance.new("UICorner")
-    selCorner.CornerRadius = UDim.new(0, 10)
+    selCorner.CornerRadius = UDim.new(0, 8)
     selCorner.Parent = selectBar
 
     selectBar.MouseEnter:Connect(function()
@@ -864,8 +877,8 @@ local function createMenu()
     sidebarBtns.selectBar = selectBar
 
     dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(0.76, 0, 0.12, 0)
-    dropdownFrame.Position = UDim2.new(0.12, 0, 0.77, 0)
+    dropdownFrame.Size = UDim2.new(0.7, 0, 0.12, 0)
+    dropdownFrame.Position = UDim2.new(0.15, 0, 0.72, 0)
     dropdownFrame.BackgroundColor3 = COLORS.DarkGray
     dropdownFrame.BackgroundTransparency = 0.1
     dropdownFrame.BorderSizePixel = 0
@@ -873,7 +886,7 @@ local function createMenu()
     dropdownFrame.Parent = principalTab
 
     local ddCorner = Instance.new("UICorner")
-    ddCorner.CornerRadius = UDim.new(0, 12)
+    ddCorner.CornerRadius = UDim.new(0, 10)
     ddCorner.Parent = dropdownFrame
 
     local dropScroll = Instance.new("ScrollingFrame")
@@ -893,9 +906,10 @@ local function createMenu()
         if dropdownFrame.Visible then refreshDropdown(dropdownFrame) end
     end)
 
+    -- Teleport
     local teleLabel = Instance.new("TextLabel")
-    teleLabel.Size = UDim2.new(0.15, 0, 0, 36)
-    teleLabel.Position = UDim2.new(0.03, 0, 0.87, 0)
+    teleLabel.Size = UDim2.new(0.15, 0, 0, 32)
+    teleLabel.Position = UDim2.new(0.03, 0, 0.88, 0)
     teleLabel.Text = "📌 Teleport:"
     teleLabel.TextColor3 = COLORS.White
     teleLabel.BackgroundTransparency = 1
@@ -904,8 +918,8 @@ local function createMenu()
     teleLabel.Parent = principalTab
 
     local teleportBar = Instance.new("TextButton")
-    teleportBar.Size = UDim2.new(0.55, 0, 0, 36)
-    teleportBar.Position = UDim2.new(0.22, 0, 0.87, 0)
+    teleportBar.Size = UDim2.new(0.55, 0, 0, 32)
+    teleportBar.Position = UDim2.new(0.20, 0, 0.88, 0)
     teleportBar.Text = "Jogador"
     teleportBar.BackgroundColor3 = COLORS.DarkGray
     teleportBar.TextColor3 = COLORS.White
@@ -915,7 +929,7 @@ local function createMenu()
     teleportBar.Parent = principalTab
 
     local tpCorner = Instance.new("UICorner")
-    tpCorner.CornerRadius = UDim.new(0, 10)
+    tpCorner.CornerRadius = UDim.new(0, 8)
     tpCorner.Parent = teleportBar
 
     teleportBar.MouseEnter:Connect(function()
@@ -928,8 +942,8 @@ local function createMenu()
     sidebarBtns.teleportBar = teleportBar
 
     teleDropdownFrame = Instance.new("Frame")
-    teleDropdownFrame.Size = UDim2.new(0.76, 0, 0.12, 0)
-    teleDropdownFrame.Position = UDim2.new(0.12, 0, 0.93, 0)
+    teleDropdownFrame.Size = UDim2.new(0.7, 0, 0.12, 0)
+    teleDropdownFrame.Position = UDim2.new(0.15, 0, 0.95, 0)
     teleDropdownFrame.BackgroundColor3 = COLORS.DarkGray
     teleDropdownFrame.BackgroundTransparency = 0.1
     teleDropdownFrame.BorderSizePixel = 0
@@ -937,7 +951,7 @@ local function createMenu()
     teleDropdownFrame.Parent = principalTab
 
     local tpdCorner = Instance.new("UICorner")
-    tpdCorner.CornerRadius = UDim.new(0, 12)
+    tpdCorner.CornerRadius = UDim.new(0, 10)
     tpdCorner.Parent = teleDropdownFrame
 
     local teleScroll = Instance.new("ScrollingFrame")
@@ -957,6 +971,7 @@ local function createMenu()
         if teleDropdownFrame.Visible then refreshDropdown(teleDropdownFrame) end
     end)
 
+    -- Jogador
     local jogadorTab = Instance.new("Frame")
     jogadorTab.Name = "Jogador"
     jogadorTab.Size = UDim2.new(1, 0, 1, 0)
@@ -1010,6 +1025,7 @@ local function createMenu()
         onCharacterAdded(LocalPlayer.Character)
     end
 
+    -- Armas
     local armasTab = Instance.new("Frame")
     armasTab.Name = "Armas"
     armasTab.Size = UDim2.new(1, 0, 1, 0)

@@ -342,7 +342,7 @@ local function createSlider(parent, yPos, label, minVal, maxVal, default, callba
     track.Position = UDim2.new(0.35, 0, 0.5, -6)
     track.BackgroundColor3 = COLORS.DarkGray
     track.BorderSizePixel = 0
-    track.Active = true  -- CORREÇÃO: permite receber InputBegan
+    track.Active = true
     track.Parent = container
     local trackCorner = Instance.new("UICorner")
     trackCorner.CornerRadius = UDim.new(0, 6)
@@ -530,6 +530,7 @@ local function createMenu()
     mainArea.BorderSizePixel = 0
     mainArea.Parent = menu
 
+    -- Créditos
     local credTab = Instance.new("Frame")
     credTab.Name = "Créditos"
     credTab.Size = UDim2.new(1, 0, 1, 0)
@@ -549,6 +550,7 @@ local function createMenu()
     credLabel.TextYAlignment = Enum.TextYAlignment.Center
     credLabel.Parent = credTab
 
+    -- Principal
     local principalTab = Instance.new("Frame")
     principalTab.Name = "Principal"
     principalTab.Size = UDim2.new(1, 0, 1, 0)
@@ -556,7 +558,7 @@ local function createMenu()
     principalTab.Visible = false
     principalTab.Parent = mainArea
 
-    -- ===== SEÇÃO KILL (TOPO) =====
+    -- ========== KILL (Brookhaven) ==========
     local killTitle = Instance.new("TextLabel")
     killTitle.Size = UDim2.new(1, 0, 0, 25)
     killTitle.Position = UDim2.new(0.03, 0, 0.03, 0)
@@ -569,7 +571,7 @@ local function createMenu()
     killTitle.Parent = principalTab
 
     local killSelectBar = Instance.new("TextButton")
-    killSelectBar.Size = UDim2.new(0.45, 0, 0, 36)
+    killSelectBar.Size = UDim2.new(0.6, 0, 0, 36)
     killSelectBar.Position = UDim2.new(0.03, 0, 0.1, 0)
     killSelectBar.Text = "Selecionar alvo"
     killSelectBar.BackgroundColor3 = COLORS.DarkGray
@@ -591,8 +593,8 @@ local function createMenu()
     end)
 
     killTargetLabel = Instance.new("TextLabel")
-    killTargetLabel.Size = UDim2.new(0.35, 0, 0, 36)
-    killTargetLabel.Position = UDim2.new(0.5, 0, 0.1, 0)
+    killTargetLabel.Size = UDim2.new(0.3, 0, 0, 36)
+    killTargetLabel.Position = UDim2.new(0.65, 0, 0.1, 0)
     killTargetLabel.Text = "Nenhum"
     killTargetLabel.TextColor3 = COLORS.White
     killTargetLabel.BackgroundTransparency = 1
@@ -601,7 +603,7 @@ local function createMenu()
     killTargetLabel.Parent = principalTab
 
     killDropdownFrame = Instance.new("Frame")
-    killDropdownFrame.Size = UDim2.new(0.8, 0, 0.18, 0)
+    killDropdownFrame.Size = UDim2.new(0.6, 0, 0.18, 0)
     killDropdownFrame.Position = UDim2.new(0.03, 0, 0.2, 0)
     killDropdownFrame.BackgroundColor3 = COLORS.DarkGray
     killDropdownFrame.BackgroundTransparency = 0.1
@@ -632,7 +634,7 @@ local function createMenu()
 
     local killBtn = Instance.new("TextButton")
     killBtn.Size = UDim2.new(0.4, 0, 0, 36)
-    killBtn.Position = UDim2.new(0.56, 0, 0.1, 0)  -- ao lado do nome
+    killBtn.Position = UDim2.new(0.03, 0, 0.39, 0)
     killBtn.Text = "💀 KILL"
     killBtn.BackgroundColor3 = COLORS.Red
     killBtn.TextColor3 = COLORS.White
@@ -660,25 +662,42 @@ local function createMenu()
         if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
         local originalPos = myChar.HumanoidRootPart.CFrame
 
-        -- Busca o sofá em várias variações
+        -- Procura sofá no padrão Brookhaven
         local sofa = nil
-        local searchPlaces = {workspace, game:GetService("ReplicatedStorage")}
-        local names = {"Sofá", "Sofa", "Couch", "SofaItem", "SofáItem"}
-        for _, place in ipairs(searchPlaces) do
-            for _, nm in ipairs(names) do
-                local found = place:FindFirstChild(nm)
-                if found and found:IsA("Tool") then
-                    sofa = found
+        local possibleNames = {"Sofá", "Sofa", "Couch"}
+        -- Procura no workspace (pasta Itens) e ReplicatedStorage
+        for _, place in ipairs({workspace, game:GetService("ReplicatedStorage")}) do
+            for _, nm in ipairs(possibleNames) do
+                local obj = place:FindFirstChild(nm)
+                if obj and obj:IsA("Tool") then
+                    sofa = obj
                     break
+                end
+            end
+            if sofa then break end
+            -- Procura dentro de "Itens"
+            local itensFolder = place:FindFirstChild("Itens")
+            if itensFolder then
+                for _, item in ipairs(itensFolder:GetChildren()) do
+                    if item:IsA("Tool") then
+                        for _, nm in ipairs(possibleNames) do
+                            if item.Name == nm then
+                                sofa = item
+                                break
+                            end
+                        end
+                    end
+                    if sofa then break end
                 end
             end
             if sofa then break end
         end
 
         if not sofa then return end
+
         local clonedSofa = sofa:Clone()
         clonedSofa.Parent = LocalPlayer.Backpack
-        task.wait(0.1)
+        task.wait(0.2)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid:EquipTool(clonedSofa)
         end
@@ -687,14 +706,42 @@ local function createMenu()
         if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             myChar:SetPrimaryPartCFrame(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0))
         end
-        task.wait(0.2)
+        task.wait(0.3)
+
+        -- Força o alvo a sentar no sofá (mecânica Brookhaven)
+        local function forceSit()
+            if target.Character and target.Character:FindFirstChild("Humanoid") then
+                target.Character.Humanoid.Sit = true
+            end
+        end
+        -- Tenta forçar depois de 0.5s e novamente após 1s
+        task.delay(0.5, forceSit)
+        task.delay(1.5, forceSit)
 
         -- Gira ao redor do alvo
         local angle = 0
         local spinConn
+        local sitDetected = false
         spinConn = RunService.Heartbeat:Connect(function(delta)
             if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
                 spinConn:Disconnect()
+                return
+            end
+            -- Verifica se o alvo sentou
+            if target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Sit then
+                if not sitDetected then
+                    sitDetected = true
+                    spinConn:Disconnect()
+                    -- Joga o alvo para longe
+                    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                    if targetRoot then
+                        targetRoot.Velocity = Vector3.new(0, 500, 0) + (targetRoot.CFrame.LookVector * 200)
+                    end
+                    task.wait(0.2)
+                    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                        myChar:SetPrimaryPartCFrame(originalPos)
+                    end
+                end
                 return
             end
             angle = angle + delta * 5
@@ -704,27 +751,14 @@ local function createMenu()
             if myChar and myChar:FindFirstChild("HumanoidRootPart") then
                 myChar:SetPrimaryPartCFrame(CFrame.new(targetPos + offset) * CFrame.Angles(0, angle, 0))
             end
-
-            -- Detecta se o alvo sentou
-            if target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Sit then
-                spinConn:Disconnect()
-                local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                if targetRoot then
-                    targetRoot.Velocity = Vector3.new(0, 500, 0) + (targetRoot.CFrame.LookVector * 200)
-                end
-                task.wait(0.2)
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    myChar:SetPrimaryPartCFrame(originalPos)
-                end
-            end
         end)
     end)
 
-    -- ===== SEÇÃO FLING (ABAIXO DO KILL) =====
+    -- ========== FLING (Brookhaven) ==========
     local flingTitle = Instance.new("TextLabel")
     flingTitle.Size = UDim2.new(1, 0, 0, 25)
-    flingTitle.Position = UDim2.new(0.03, 0, 0.39, 0)
-    flingTitle.Text = "🌀 Fling (Bola)"
+    flingTitle.Position = UDim2.new(0.03, 0, 0.48, 0)
+    flingTitle.Text = "🌀 Fling"
     flingTitle.TextColor3 = COLORS.NeonRed
     flingTitle.BackgroundTransparency = 1
     flingTitle.Font = Enum.Font.GothamBold
@@ -733,8 +767,8 @@ local function createMenu()
     flingTitle.Parent = principalTab
 
     local flingBtn = Instance.new("TextButton")
-    flingBtn.Size = UDim2.new(0.5, 0, 0, 36)
-    flingBtn.Position = UDim2.new(0.25, 0, 0.45, 0)
+    flingBtn.Size = UDim2.new(0.4, 0, 0, 36)
+    flingBtn.Position = UDim2.new(0.03, 0, 0.55, 0)
     flingBtn.Text = "Ativar Fling"
     flingBtn.BackgroundColor3 = COLORS.Red
     flingBtn.TextColor3 = COLORS.White
@@ -760,16 +794,30 @@ local function createMenu()
         local target = killTargetPlayer
         if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
 
-        -- Busca a bola (vários nomes)
+        -- Procura bola no padrão Brookhaven
         local ball = nil
-        local searchPlaces = {workspace, game:GetService("ReplicatedStorage")}
-        local ballNames = {"Bola", "Ball", "BolaItem", "BallItem", "Bola de Futebol", "SoccerBall"}
-        for _, place in ipairs(searchPlaces) do
+        local ballNames = {"Bola", "Ball", "Bola de Futebol", "SoccerBall", "SportsBall"}
+        for _, place in ipairs({workspace, game:GetService("ReplicatedStorage")}) do
             for _, nm in ipairs(ballNames) do
-                local found = place:FindFirstChild(nm)
-                if found and found:IsA("Tool") then
-                    ball = found
+                local obj = place:FindFirstChild(nm)
+                if obj and obj:IsA("Tool") then
+                    ball = obj
                     break
+                end
+            end
+            if ball then break end
+            local itensFolder = place:FindFirstChild("Itens")
+            if itensFolder then
+                for _, item in ipairs(itensFolder:GetChildren()) do
+                    if item:IsA("Tool") then
+                        for _, nm in ipairs(ballNames) do
+                            if item.Name == nm then
+                                ball = item
+                                break
+                            end
+                        end
+                    end
+                    if ball then break end
                 end
             end
             if ball then break end
@@ -777,28 +825,27 @@ local function createMenu()
 
         if not ball then return end
 
-        -- Clone a bola e coloca no HumanoidRootPart do alvo
         local clonedBall = ball:Clone()
         clonedBall.Parent = target.Character
-        clonedBall.Handle.Position = target.Character.HumanoidRootPart.Position
+        clonedBall.Handle.CFrame = target.Character.HumanoidRootPart.CFrame
         clonedBall.Handle.Anchored = false
         clonedBall.Handle.CanCollide = true
         clonedBall.Handle.Massless = false
 
-        -- Fixa a bola ao alvo com uma weld
+        -- Fixa a bola ao HumanoidRootPart
         local weld = Instance.new("Weld")
         weld.Part0 = clonedBall.Handle
         weld.Part1 = target.Character.HumanoidRootPart
         weld.Parent = clonedBall.Handle
 
-        -- Gira a bola violentamente
+        -- Gira violentamente
         local spinVel = Instance.new("BodyAngularVelocity")
         spinVel.AngularVelocity = Vector3.new(0, 50, 0)
         spinVel.MaxTorque = Vector3.new(400000, 400000, 400000)
         spinVel.P = 1250
         spinVel.Parent = clonedBall.Handle
 
-        -- Remove após alguns segundos para evitar lag
+        -- Remove após 5 segundos
         task.delay(5, function()
             if clonedBall and clonedBall.Parent then
                 clonedBall:Destroy()
@@ -806,10 +853,10 @@ local function createMenu()
         end)
     end)
 
-    -- ===== SEÇÃO VIEW E TELEPORT (EMBAIXO, MAIS ESPAÇO) =====
+    -- ===== VIEW =====
     local viewToggle = Instance.new("TextButton")
     viewToggle.Size = UDim2.new(0.18, 0, 0, 36)
-    viewToggle.Position = UDim2.new(0.03, 0, 0.60, 0)
+    viewToggle.Position = UDim2.new(0.03, 0, 0.65, 0)
     viewToggle.Text = "👁️ View: OFF"
     viewToggle.BackgroundColor3 = COLORS.DarkGray
     viewToggle.TextColor3 = COLORS.White
@@ -837,7 +884,7 @@ local function createMenu()
 
     local selectBar = Instance.new("TextButton")
     selectBar.Size = UDim2.new(0.65, 0, 0, 36)
-    selectBar.Position = UDim2.new(0.24, 0, 0.60, 0)
+    selectBar.Position = UDim2.new(0.24, 0, 0.65, 0)
     selectBar.Text = "Selecionar jogador"
     selectBar.BackgroundColor3 = COLORS.DarkGray
     selectBar.TextColor3 = COLORS.White
@@ -860,8 +907,8 @@ local function createMenu()
     sidebarBtns.selectBar = selectBar
 
     dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(0.76, 0, 0.15, 0)
-    dropdownFrame.Position = UDim2.new(0.12, 0, 0.72, 0)
+    dropdownFrame.Size = UDim2.new(0.76, 0, 0.12, 0)
+    dropdownFrame.Position = UDim2.new(0.12, 0, 0.77, 0)
     dropdownFrame.BackgroundColor3 = COLORS.DarkGray
     dropdownFrame.BackgroundTransparency = 0.1
     dropdownFrame.BorderSizePixel = 0
@@ -889,9 +936,10 @@ local function createMenu()
         if dropdownFrame.Visible then refreshDropdown(dropdownFrame) end
     end)
 
+    -- ===== TELEPORT =====
     local teleLabel = Instance.new("TextLabel")
     teleLabel.Size = UDim2.new(0.15, 0, 0, 36)
-    teleLabel.Position = UDim2.new(0.03, 0, 0.82, 0)
+    teleLabel.Position = UDim2.new(0.03, 0, 0.87, 0)
     teleLabel.Text = "📌 Teleport:"
     teleLabel.TextColor3 = COLORS.White
     teleLabel.BackgroundTransparency = 1
@@ -901,7 +949,7 @@ local function createMenu()
 
     local teleportBar = Instance.new("TextButton")
     teleportBar.Size = UDim2.new(0.55, 0, 0, 36)
-    teleportBar.Position = UDim2.new(0.22, 0, 0.82, 0)
+    teleportBar.Position = UDim2.new(0.22, 0, 0.87, 0)
     teleportBar.Text = "Jogador"
     teleportBar.BackgroundColor3 = COLORS.DarkGray
     teleportBar.TextColor3 = COLORS.White
@@ -924,8 +972,8 @@ local function createMenu()
     sidebarBtns.teleportBar = teleportBar
 
     teleDropdownFrame = Instance.new("Frame")
-    teleDropdownFrame.Size = UDim2.new(0.76, 0, 0.15, 0)
-    teleDropdownFrame.Position = UDim2.new(0.12, 0, 0.9, 0)
+    teleDropdownFrame.Size = UDim2.new(0.76, 0, 0.12, 0)
+    teleDropdownFrame.Position = UDim2.new(0.12, 0, 0.93, 0)
     teleDropdownFrame.BackgroundColor3 = COLORS.DarkGray
     teleDropdownFrame.BackgroundTransparency = 0.1
     teleDropdownFrame.BorderSizePixel = 0
@@ -953,6 +1001,7 @@ local function createMenu()
         if teleDropdownFrame.Visible then refreshDropdown(teleDropdownFrame) end
     end)
 
+    -- Jogador (sliders)
     local jogadorTab = Instance.new("Frame")
     jogadorTab.Name = "Jogador"
     jogadorTab.Size = UDim2.new(1, 0, 1, 0)
@@ -1006,6 +1055,7 @@ local function createMenu()
         onCharacterAdded(LocalPlayer.Character)
     end
 
+    -- Armas
     local armasTab = Instance.new("Frame")
     armasTab.Name = "Armas"
     armasTab.Size = UDim2.new(1, 0, 1, 0)
@@ -1044,19 +1094,7 @@ local function createMenu()
     end)
 
     giveAllBtn.MouseButton1Click:Connect(function()
-        local giveAllRemote = game:GetService("ReplicatedStorage"):FindFirstChild("GiveAllItems")
-        if giveAllRemote and giveAllRemote:IsA("RemoteEvent") then
-            giveAllRemote:FireServer(LocalPlayer)
-        else
-            local function grabFrom(loc)
-                for _, obj in ipairs(loc:GetChildren()) do
-                    if obj:IsA("Tool") then
-                        obj:Clone().Parent = LocalPlayer.Backpack
-                    end
-                end
-            end
-            grabFrom(game:GetService("ReplicatedStorage"))
-            if workspace:FindFirstChild("Itens") then
+        local giveAllRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Itens") then
                 grabFrom(workspace.Itens)
             end
         end

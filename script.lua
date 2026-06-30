@@ -138,7 +138,7 @@ local function createTextBox(parent, placeholder, size, position, color, textCol
     return box
 end
 
--- --- BOTÃO TOGGLE CORRIGIDO E ANIMADO ---
+-- TOGGLE CORRIGIDO E FUNCIONAL
 local function createToggle(parent, text, size, position, callback)
     local frame = Instance.new("Frame")
     frame.Size = size
@@ -209,7 +209,7 @@ local function createToggle(parent, text, size, position, callback)
     return frame
 end
 
--- --- CRIA O SELETOR DE JOGADORES (COM BORDA SEMPRE VISÍVEL) ---
+-- SELETOR DE JOGADORES
 local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 50)
@@ -242,7 +242,8 @@ local function createPlayerSelector(parent, yPos)
     visor.Font = Enum.Font.GothamBold
     visor.ZIndex = 3
     visor.Parent = container
-    
+
+    -- BORDA SEMPRE VISÍVEL
     local stroke = Instance.new("UIStroke")
     stroke.Color = corNeon
     stroke.Thickness = 2
@@ -330,7 +331,7 @@ local function createPlayerSelector(parent, yPos)
     return visor
 end
 
--- --- CRIA O SELETOR DE MÉTODO (COM BORDA E LISTA ball, bus, boat) ---
+-- SELETOR DE MÉTODO
 local function createMethodSelector(parent, yPos)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 50)
@@ -364,6 +365,7 @@ local function createMethodSelector(parent, yPos)
     visor.ZIndex = 3
     visor.Parent = container
 
+    -- BORDA SEMPRE VISÍVEL
     local stroke = Instance.new("UIStroke")
     stroke.Color = corNeon
     stroke.Thickness = 2
@@ -426,12 +428,20 @@ local function createMethodSelector(parent, yPos)
     return visor
 end
 
+-- ==========================================================
+-- CRIAÇÃO DA INTERFACE E TELA DE LOGIN
+-- ==========================================================
+
 local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FireHubUI"
 screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 999
 screenGui.Parent = playerGui
 
+-- TELA DE LOGIN
 local keyFrame = createRoundedFrame(screenGui, UDim2.new(0, 340, 0, 220), UDim2.new(0.5, -170, 0.5, -110), corPreta, 0, 12)
+keyFrame.ZIndex = 999
 aplicarNeon(keyFrame, 16, 0.65, corNeon, 16)
 aplicarNeon(keyFrame, 8, 0.45, corNeon, 14)
 
@@ -454,8 +464,23 @@ createTextLabel(keyFrame, "Insira sua chave para continuar", UDim2.new(1, -30, 0
 local keyBox = createTextBox(keyFrame, "Digite sua chave...", UDim2.new(1, -30, 0, 38), UDim2.new(0, 15, 0, 74), Color3.fromRGB(30,30,30), corBranca, Enum.Font.Gotham, 15)
 local verifyBtn = createTextButton(keyFrame, "VERIFICAR", UDim2.new(1, -30, 0, 40), UDim2.new(0, 15, 0, 125), corNeon, corBranca, Enum.Font.GothamBold, 16)
 
+local linkLabel = Instance.new("TextLabel")
+linkLabel.Size = UDim2.new(1, -30, 0, 20)
+linkLabel.Position = UDim2.new(0, 15, 0, 178)
+linkLabel.BackgroundTransparency = 1
+linkLabel.Text = "Não tem chave? Contate o criador"
+linkLabel.TextColor3 = corNeonEscuro
+linkLabel.TextScaled = false
+linkLabel.TextSize = 12
+linkLabel.Font = Enum.Font.Gotham
+linkLabel.TextXAlignment = Enum.TextXAlignment.Center
+linkLabel.TextYAlignment = Enum.TextYAlignment.Center
+linkLabel.ZIndex = 3
+linkLabel.Parent = keyFrame
+
 makeDraggable(keyFrame, titleBar)
 
+-- BOTÃO FLUTUANTE
 local floatBtn = Instance.new("TextButton")
 floatBtn.Size = UDim2.new(0, 55, 0, 55)
 floatBtn.Position = UDim2.new(1, -75, 1, -85)
@@ -470,6 +495,7 @@ floatBtn.Visible = false
 
 makeDraggable(floatBtn, floatBtn)
 
+-- MENU PRINCIPAL
 local mainFrame = createRoundedFrame(screenGui, UDim2.new(0, 580, 0, 420), UDim2.new(0.5, -290, 0.5, -210), corPreta, 0, 12)
 mainFrame.Visible = false
 aplicarNeon(mainFrame, 16, 0.65, corNeon, 16)
@@ -516,7 +542,6 @@ local tabPanelCorner = Instance.new("UICorner")
 tabPanelCorner.CornerRadius = UDim.new(0, 12)
 tabPanelCorner.Parent = tabPanel
 
--- ÁREA DE CONTEÚDO COM SCROLL (PARA ROLAR PARA BAIXO E CIMA)
 local contentArea = Instance.new("ScrollingFrame")
 contentArea.Size = UDim2.new(1, -130, 1, -52)
 contentArea.Position = UDim2.new(0, 125, 0, 47)
@@ -531,10 +556,6 @@ contentArea.Parent = mainFrame
 local tabs = {"ℹ️ Inf", "🔥 Principal", "🎨 Visual", "🧍 Jogador", "🌍 Mundo", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚙️ Config"}
 local tabButtons = {}
 local selectedTab = "ℹ️ Inf"
-
-local killActive = false
-local flingActive = false
-local blackHoleActive = false
 
 local function updateContent(tabName)
     for _, child in pairs(contentArea:GetChildren()) do
@@ -687,4 +708,53 @@ local function createTabButton(text, yPos)
     indicatorCorner.CornerRadius = UDim.new(0, 2)
     indicatorCorner.Parent = indicator
 
-    btn.MouseButton1Click
+    btn.MouseButton1Click:Connect(function()
+        selectTab(text)
+    end)
+
+    return btn
+end
+
+for i, tab in ipairs(tabs) do
+    local yPos = 10 + (i-1)*36
+    local btn = createTabButton(tab, yPos)
+    table.insert(tabButtons, btn)
+end
+
+selectTab("ℹ️ Inf")
+
+verifyBtn.MouseButton1Click:Connect(function()
+    local rawInput = keyBox.Text
+    local trimmedInput = rawInput:match("^%s*(.-)%s*$")
+    if trimmedInput then trimmedInput = trimmedInput:lower() end
+
+    if trimmedInput == "menu k" or trimmedInput == "menuk" then
+        keyBox.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        TweenService:Create(keyBox, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(30,30,30)}):Play()
+        keyFrame.Visible = false
+        floatBtn.Visible = true
+        mainFrame.Visible = false
+    else
+        keyBox.BackgroundColor3 = corNeonEscuro
+        TweenService:Create(keyBox, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(30,30,30)}):Play()
+        keyBox.PlaceholderText = "Chave inválida!"
+        task.wait(1)
+        keyBox.PlaceholderText = "Digite sua chave..."
+    end
+end)
+
+keyBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        verifyBtn.MouseButton1Click:Fire()
+    end
+end)
+
+local menuAberto = false
+floatBtn.MouseButton1Click:Connect(function()
+    menuAberto = not menuAberto
+    mainFrame.Visible = menuAberto
+end)
+
+keyFrame.Visible = true
+floatBtn.Visible = false
+mainFrame.Visible = false

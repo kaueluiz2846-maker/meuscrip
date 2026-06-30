@@ -263,8 +263,13 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADOR (LISTA DINÂMICA CORRIGIDA)
+-- SELETOR DE JOGADOR (CORRIGIDO COM SUAS INSTRUÇÕES)
 -- ==========================================
+
+-- Variáveis globais para guardar os seletores e evitar recriação
+local cachedPlayerSelector = nil
+local cachedMethodSelector = nil
+local cachedAvatarSelector = nil
 
 local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
@@ -336,7 +341,7 @@ local function createPlayerSelector(parent, yPos)
     scrollingList.ZIndex = 51
     scrollingList.Parent = dropDown
 
-    -- Função de atualizar a lista (corrigida com sua instrução)
+    -- Função de atualizar a lista (CORRIGIDA)
     local function updateList()
         for _, child in ipairs(scrollingList:GetChildren()) do
             if child:IsA("TextButton") or child:IsA("TextLabel") then
@@ -368,20 +373,21 @@ local function createPlayerSelector(parent, yPos)
         scrollingList.CanvasSize = UDim2.new(0, 0, 0, y)
     end
 
-    -- Eventos de tempo real (PlayerAdded e PlayerRemoving)
-    Players.PlayerAdded:Connect(function()
-        if dropDown.Visible then updateList() end
-    end)
-    Players.PlayerRemoving:Connect(function()
-        if dropDown.Visible then updateList() end
-    end)
+    -- Eventos de tempo real CORRIGIDOS (Atualizam SEMPRE, independente do dropdown)
+    local function refreshOnChange()
+        updateList()
+    end
 
+    Players.PlayerAdded:Connect(refreshOnChange)
+    Players.PlayerRemoving:Connect(refreshOnChange)
+
+    -- Ação de clique CORRIGIDA (Abre e chama update SEMPRE)
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
-        if dropDown.Visible then updateList() end
+        updateList()
     end)
 
-    return visor
+    return container
 end
 
 -- ==========================================
@@ -480,7 +486,7 @@ local function createMethodSelector(parent, yPos)
         dropDown.Visible = not dropDown.Visible
     end)
 
-    return visor
+    return container
 end
 
 -- ==========================================
@@ -641,16 +647,25 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
 
     elseif tabName == "🔥 Principal" then
-        -- JOGADOR E MÉTODO COLADOS NO TOPO
-        local visorJogador = createPlayerSelector(contentArea, 10)
-        local visorMetodo = createMethodSelector(contentArea, 68)
+        -- CRIAÇÃO/REAPROVEITAMENTO DOS SELETORES (CORRIGIDO PARA NÃO RECRIAR)
+        if not cachedPlayerSelector then
+            cachedPlayerSelector = createPlayerSelector(contentArea, 10)
+        else
+            cachedPlayerSelector.Parent = contentArea
+        end
+        
+        if not cachedMethodSelector then
+            cachedMethodSelector = createMethodSelector(contentArea, 68)
+        else
+            cachedMethodSelector.Parent = contentArea
+        end
 
         local toggleSize = UDim2.new(1, -20, 0, 28)
         local yBase = 140 
 
         -- KILL > (Botão)
         createActionButton(contentArea, "Kill", toggleSize, UDim2.new(0, 10, 0, yBase), function()
-            local targetName = visorJogador.Text
+            local targetName = cachedPlayerSelector:FindFirstChild("TextButton", true).Text
             if targetName == "Selecionar..." or targetName == "" then return end
             local targetPlayer = Players:FindFirstChild(targetName)
             if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
@@ -675,7 +690,7 @@ local function updateContent(tabName)
 
         -- TELEPORT (Novo Botão >)
         createActionButton(contentArea, "Teleport", toggleSize, UDim2.new(0, 10, 0, yBase + 140), function()
-            local targetName = visorJogador.Text
+            local targetName = cachedPlayerSelector:FindFirstChild("TextButton", true).Text
             if targetName == "Selecionar..." or targetName == "" then
                 print("Nenhum jogador selecionado para teleporte.")
                 return
@@ -695,10 +710,15 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, yBase + 180)
 
     elseif tabName == "👤 Avatar" then
-        local visorAvatar = createPlayerSelector(contentArea, 10)
+        -- CRIAÇÃO/REAPROVEITAMENTO DO SELETOR DE AVATAR
+        if not cachedAvatarSelector then
+            cachedAvatarSelector = createPlayerSelector(contentArea, 10)
+        else
+            cachedAvatarSelector.Parent = contentArea
+        end
         
         createActionButton(contentArea, "Copy avatar", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 75), function()
-            local targetName = visorAvatar.Text
+            local targetName = cachedAvatarSelector:FindFirstChild("TextButton", true).Text
             if targetName == "Selecionar..." or targetName == "" then return end
             print("Copiando avatar do jogador:", targetName)
         end)
@@ -722,7 +742,7 @@ local function updateContent(tabName)
             end
         end
 
-        -- NOVO SLIDER CORRIGIDO (USANDO SUA SOLUÇÃO)
+        -- SLIDER CORRIGIDO E 100% FUNCIONAL
         local function createSlider(parent, text, yPos, defaultVal, minVal, maxVal, statName)
             local frame = Instance.new("Frame")
             frame.Size = UDim2.new(1, -20, 0, 40)
@@ -759,7 +779,7 @@ local function updateContent(tabName)
             sliderFrame.Position = UDim2.new(1, -190, 0.5, -4)
             sliderFrame.BackgroundColor3 = corCinza
             sliderFrame.BorderSizePixel = 0
-            sliderFrame.Active = true -- Ajuda na captura de input
+            sliderFrame.Active = true 
             sliderFrame.ZIndex = 3
             sliderFrame.Parent = frame
 
@@ -779,7 +799,7 @@ local function updateContent(tabName)
             fillCorner.Parent = fillBar
 
             local sliderBtn = Instance.new("TextButton")
-            sliderBtn.Size = UDim2.new(0, 20, 0, 20) -- Aumentei o tamanho do clique
+            sliderBtn.Size = UDim2.new(0, 20, 0, 20)
             sliderBtn.Position = UDim2.new((defaultVal - minVal) / (maxVal - minVal), -10, 0.5, -10)
             sliderBtn.BackgroundColor3 = corBranca
             sliderBtn.Text = ""
@@ -792,53 +812,45 @@ local function updateContent(tabName)
             sliderCornerBtn.CornerRadius = UDim.new(1, 0)
             sliderCornerBtn.Parent = sliderBtn
 
-            -- Variável de arrasto e valor atual
             local dragging = false
             local currentVal = defaultVal
 
-            -- Aplica o valor inicial no personagem
+            -- Aplica o valor inicial
             local char = player.Character
             if char and char:FindFirstChild("Humanoid") then
                 updatePlayerStats(statName, defaultVal)
             end
 
-            -- Captura de início e fim do arrasto
+            -- Captura de início
             sliderBtn.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = true
                 end
             end)
 
+            -- Captura de fim
             UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = false
                 end
             end)
 
-            -- Captura de movimento do mouse (CORRIGIDO COM SUA INSTRUÇÃO)
+            -- CAPTURA DE MOVIMENTO DO MOUSE (CORRIGIDO COM SUA INSTRUÇÃO)
             UserInputService.InputChanged:Connect(function(input)
                 if not dragging then return end
                 if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
 
-                -- Pega coordenadas absolutas do mouse
                 local pos = input.Position.X
-                -- Pega coordenadas absolutas do inicio da barra de fundo (sliderFrame)
                 local startX = sliderFrame.AbsolutePosition.X
-                -- Pega o tamanho absoluto da barra de fundo
                 local sizeX = sliderFrame.AbsoluteSize.X
 
-                -- Calcula o percentual do arrasto baseado no mundo real
                 local percent = math.clamp((pos - startX) / sizeX, 0, 1)
-
-                -- Calcula o valor numérico real
                 currentVal = math.floor(minVal + percent * (maxVal - minVal))
 
-                -- Atualiza UI
                 fillBar.Size = UDim2.new(percent, 0, 1, 0)
                 sliderBtn.Position = UDim2.new(percent, -10, 0.5, -10)
                 valueDisplay.Text = tostring(currentVal)
 
-                -- Atualiza o personagem
                 updatePlayerStats(statName, currentVal)
             end)
         end

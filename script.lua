@@ -10,7 +10,6 @@ local corNeon = Color3.fromRGB(255, 0, 0)
 local corNeonEscuro = Color3.fromRGB(139, 0, 0)
 local corBranca = Color3.fromRGB(255, 255, 255)
 
--- Função para arrastar (já aplicada na tela de login e no menu)
 local function makeDraggable(frame, dragHandle)
     local dragging = false
     local dragStart, startPos
@@ -139,7 +138,7 @@ local function createTextBox(parent, placeholder, size, position, color, textCol
     return box
 end
 
--- Toggle Switch CORRIGIDO E FUNCIONAL
+-- --- BOTÃO TOGGLE CORRIGIDO E ANIMADO ---
 local function createToggle(parent, text, size, position, callback)
     local frame = Instance.new("Frame")
     frame.Size = size
@@ -210,7 +209,7 @@ local function createToggle(parent, text, size, position, callback)
     return frame
 end
 
--- Criador do seletor de jogadores (COM BORDA NO VISOR)
+-- --- CRIA O SELETOR DE JOGADORES (COM BORDA SEMPRE VISÍVEL) ---
 local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 50)
@@ -244,11 +243,10 @@ local function createPlayerSelector(parent, yPos)
     visor.ZIndex = 3
     visor.Parent = container
     
-    -- BORDA ADICIONADA NO VISOR
     local stroke = Instance.new("UIStroke")
     stroke.Color = corNeon
     stroke.Thickness = 2
-    stroke.Transparency = 0.5
+    stroke.Transparency = 0
     stroke.Parent = visor
 
     local visorCorner = Instance.new("UICorner")
@@ -332,12 +330,107 @@ local function createPlayerSelector(parent, yPos)
     return visor
 end
 
+-- --- CRIA O SELETOR DE MÉTODO (COM BORDA E LISTA ball, bus, boat) ---
+local function createMethodSelector(parent, yPos)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -20, 0, 50)
+    container.Position = UDim2.new(0, 10, 0, yPos)
+    container.BackgroundTransparency = 1
+    container.ZIndex = 3
+    container.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.4, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "Método"
+    label.TextColor3 = corBranca
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 3
+    label.Parent = container
+
+    local visor = Instance.new("TextButton")
+    visor.Size = UDim2.new(0, 220, 0, 40)
+    visor.Position = UDim2.new(1, -220, 0.5, -20)
+    visor.BackgroundColor3 = corPreta
+    visor.BackgroundTransparency = 0.2
+    visor.BorderSizePixel = 0
+    visor.Text = "Selecionar..."
+    visor.TextColor3 = corBranca
+    visor.TextSize = 14
+    visor.Font = Enum.Font.GothamBold
+    visor.ZIndex = 3
+    visor.Parent = container
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = corNeon
+    stroke.Thickness = 2
+    stroke.Transparency = 0
+    stroke.Parent = visor
+
+    local visorCorner = Instance.new("UICorner")
+    visorCorner.CornerRadius = UDim.new(0, 6)
+    visorCorner.Parent = visor
+    aplicarNeon(visor, 6, 0.7, corNeon, 10)
+
+    local dropDown = Instance.new("Frame")
+    dropDown.Size = UDim2.new(0, 220, 0, 110)
+    dropDown.Position = UDim2.new(1, -220, 1, 5)
+    dropDown.BackgroundColor3 = corPreta
+    dropDown.BackgroundTransparency = 0.1
+    dropDown.BorderSizePixel = 0
+    dropDown.Visible = false
+    dropDown.ZIndex = 5
+    dropDown.Parent = container
+
+    local dropCorner = Instance.new("UICorner")
+    dropCorner.CornerRadius = UDim.new(0, 6)
+    dropCorner.Parent = dropDown
+    aplicarNeon(dropDown, 8, 0.6, corNeon, 12)
+
+    local list = Instance.new("Frame")
+    list.Size = UDim2.new(1, -4, 1, -4)
+    list.Position = UDim2.new(0, 2, 0, 2)
+    list.BackgroundTransparency = 1
+    list.BorderSizePixel = 0
+    list.ZIndex = 6
+    list.Parent = dropDown
+
+    local y = 0
+    local methods = {"ball", "bus", "boat"}
+    for _, m in ipairs(methods) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 28)
+        btn.Position = UDim2.new(0, 0, 0, y)
+        btn.BackgroundTransparency = 1
+        btn.Text = m
+        btn.TextColor3 = corBranca
+        btn.TextSize = 14
+        btn.Font = Enum.Font.GothamBold
+        btn.ZIndex = 7
+        btn.Parent = list
+
+        btn.MouseButton1Click:Connect(function()
+            visor.Text = m
+            dropDown.Visible = false
+        end)
+        y = y + 30
+    end
+
+    visor.MouseButton1Click:Connect(function()
+        dropDown.Visible = not dropDown.Visible
+    end)
+
+    return visor
+end
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- TELA DE LOGIN (JÁ É ARRASTÁVEL POR CAUSA DO makeDraggable LOGO ABAIXO)
 local keyFrame = createRoundedFrame(screenGui, UDim2.new(0, 340, 0, 220), UDim2.new(0.5, -170, 0.5, -110), corPreta, 0, 12)
 aplicarNeon(keyFrame, 16, 0.65, corNeon, 16)
 aplicarNeon(keyFrame, 8, 0.45, corNeon, 14)
@@ -361,21 +454,6 @@ createTextLabel(keyFrame, "Insira sua chave para continuar", UDim2.new(1, -30, 0
 local keyBox = createTextBox(keyFrame, "Digite sua chave...", UDim2.new(1, -30, 0, 38), UDim2.new(0, 15, 0, 74), Color3.fromRGB(30,30,30), corBranca, Enum.Font.Gotham, 15)
 local verifyBtn = createTextButton(keyFrame, "VERIFICAR", UDim2.new(1, -30, 0, 40), UDim2.new(0, 15, 0, 125), corNeon, corBranca, Enum.Font.GothamBold, 16)
 
-local linkLabel = Instance.new("TextLabel")
-linkLabel.Size = UDim2.new(1, -30, 0, 20)
-linkLabel.Position = UDim2.new(0, 15, 0, 178)
-linkLabel.BackgroundTransparency = 1
-linkLabel.Text = "Não tem chave? Contate o criador"
-linkLabel.TextColor3 = corNeonEscuro
-linkLabel.TextScaled = false
-linkLabel.TextSize = 12
-linkLabel.Font = Enum.Font.Gotham
-linkLabel.TextXAlignment = Enum.TextXAlignment.Center
-linkLabel.TextYAlignment = Enum.TextYAlignment.Center
-linkLabel.ZIndex = 3
-linkLabel.Parent = keyFrame
-
--- AQUI É O QUE TORNA A TELA DE LOGIN ARRASTÁVEL
 makeDraggable(keyFrame, titleBar)
 
 local floatBtn = Instance.new("TextButton")
@@ -438,10 +516,15 @@ local tabPanelCorner = Instance.new("UICorner")
 tabPanelCorner.CornerRadius = UDim.new(0, 12)
 tabPanelCorner.Parent = tabPanel
 
-contentArea = Instance.new("Frame")
+-- ÁREA DE CONTEÚDO COM SCROLL (PARA ROLAR PARA BAIXO E CIMA)
+local contentArea = Instance.new("ScrollingFrame")
 contentArea.Size = UDim2.new(1, -130, 1, -52)
 contentArea.Position = UDim2.new(0, 125, 0, 47)
 contentArea.BackgroundTransparency = 1
+contentArea.BorderSizePixel = 0
+contentArea.ScrollBarThickness = 4
+contentArea.ScrollBarImageColor3 = corNeon
+contentArea.CanvasSize = UDim2.new(0, 0, 0, 400)
 contentArea.ZIndex = 3
 contentArea.Parent = mainFrame
 
@@ -449,7 +532,6 @@ local tabs = {"ℹ️ Inf", "🔥 Principal", "🎨 Visual", "🧍 Jogador", "�
 local tabButtons = {}
 local selectedTab = "ℹ️ Inf"
 
--- Variáveis de estado para as 3 opções novas
 local killActive = false
 local flingActive = false
 local blackHoleActive = false
@@ -494,36 +576,41 @@ local function updateContent(tabName)
         desc2.Parent = contentArea
 
     elseif tabName == "🔥 Principal" then
-        local visor = createPlayerSelector(contentArea, 10)
+        local visorJogador = createPlayerSelector(contentArea, 10) -- Seleciona jogador
+        local visorMetodo = createMethodSelector(contentArea, 70)   -- Seleciona método (ball, bus, boat)
 
         local toggleSize = UDim2.new(1, -20, 0, 28)
-        local yBase = 85 -- Mudei para 85 para deixar as opções um pouco mais para baixo
 
-        -- OPÇÕES KILL, FLING E BLACK HOLE (AGORA FUNCIONAIS E COM ESTADO)
-        createToggle(contentArea, "Kill", toggleSize, UDim2.new(0, 10, 0, yBase), function(ativado)
-            killActive = ativado
-            print("Kill status:", killActive and "LIGADO" or "DESLIGADO")
+        -- BOTÃO KILL (Apenas botão normal)
+        local killBtn = createTextButton(contentArea, "KILL (Único)", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 140), corNeonEscuro, corBranca, Enum.Font.GothamBold, 14)
+        killBtn.MouseButton1Click:Connect(function()
+            local targetName = visorJogador.Text
+            if targetName == "Selecionar..." or targetName == "" then return end
+            local targetPlayer = Players:FindFirstChild(targetName)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+                targetPlayer.Character.Humanoid.Health = 0
+                print("Matou", targetName)
+            end
         end)
-        
-        createToggle(contentArea, "Fling", toggleSize, UDim2.new(0, 10, 0, yBase + 33), function(ativado)
+
+        -- TOGGLE FLING (Funcional)
+        createToggle(contentArea, "Fling", toggleSize, UDim2.new(0, 10, 0, 200), function(ativado)
             flingActive = ativado
             print("Fling status:", flingActive and "LIGADO" or "DESLIGADO")
         end)
-        
-        createToggle(contentArea, "black hole", toggleSize, UDim2.new(0, 10, 0, yBase + 66), function(ativado)
+
+        -- TOGGLE BLACK HOLE (Funcional)
+        createToggle(contentArea, "black hole", toggleSize, UDim2.new(0, 10, 0, 240), function(ativado)
             blackHoleActive = ativado
             print("Black Hole status:", blackHoleActive and "LIGADO" or "DESLIGADO")
         end)
 
-        createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, yBase + 105), corBranca, Enum.Font.GothamBold, 14)
-        
-        local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, yBase + 135), corNeon, corBranca, Enum.Font.GothamBold, 14)
-        
+        -- TELEPORTE
+        createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, 290), corBranca, Enum.Font.GothamBold, 14)
+        local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 320), corNeon, corBranca, Enum.Font.GothamBold, 14)
         teleportBtn.MouseButton1Click:Connect(function()
-            local targetName = visor.Text
-            if targetName == "Selecionar..." or targetName == "" then
-                return
-            end
+            local targetName = visorJogador.Text
+            if targetName == "Selecionar..." or targetName == "" then return end
             local targetPlayer = Players:FindFirstChild(targetName)
             if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local localChar = player.Character
@@ -533,19 +620,23 @@ local function updateContent(tabName)
             end
         end)
 
-        -- Funções antigas
+        -- Funções antigas (Auto Farm, etc) MANTIDAS NO FINAL DO SCROLL
         local funcs = {"Auto Farm", "Auto Quest", "Auto Boss", "Coletar Itens"}
-        local yBaseAntiga = yBase + 175
+        local yBaseAntiga = 380
         for i, name in ipairs(funcs) do
             local yPos = yBaseAntiga + (i-1)*33
             createToggle(contentArea, name, toggleSize, UDim2.new(0, 10, 0, yPos), function(ativado)
                 print(name, ativado and "LIGADO" or "DESLIGADO")
             end)
         end
+        
+        -- Aumenta o tamanho do canvas para permitir rolagem
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, yBaseAntiga + (#funcs * 33) + 20)
 
     else
         createTextLabel(contentArea, tabName, UDim2.new(1, 0, 0, 30), UDim2.new(0, 10, 0, 10), corBranca, Enum.Font.GothamBold, 18)
         createTextLabel(contentArea, "Conteúdo em desenvolvimento...", UDim2.new(1, 0, 0, 20), UDim2.new(0, 10, 0, 50), corBranca, Enum.Font.Gotham, 14)
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
     end
 end
 
@@ -606,47 +697,4 @@ local function createTabButton(text, yPos)
     return btn
 end
 
-for i, tab in ipairs(tabs) do
-    local yPos = 10 + (i-1)*36
-    local btn = createTabButton(tab, yPos)
-    tabButtons[#tabButtons+1] = btn
-end
-
-selectTab("ℹ️ Inf")
-
-verifyBtn.MouseButton1Click:Connect(function()
-    local rawInput = keyBox.Text
-    local trimmedInput = rawInput:match("^%s*(.-)%s*$")
-    if trimmedInput then trimmedInput = trimmedInput:lower() end
-
-    if trimmedInput == "menu k" or trimmedInput == "menuk" then
-        keyBox.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-        TweenService:Create(keyBox, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(30,30,30)}):Play()
-
-        keyFrame.Visible = false
-        floatBtn.Visible = true
-        mainFrame.Visible = false
-    else
-        keyBox.BackgroundColor3 = corNeonEscuro
-        TweenService:Create(keyBox, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(30,30,30)}):Play()
-        keyBox.PlaceholderText = "Chave inválida!"
-        task.wait(1)
-        keyBox.PlaceholderText = "Digite sua chave..."
-    end
-end)
-
-keyBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        verifyBtn.MouseButton1Click:Fire()
-    end
-end)
-
-local menuAberto = false
-floatBtn.MouseButton1Click:Connect(function()
-    menuAberto = not menuAberto
-    mainFrame.Visible = menuAberto
-end)
-
-keyFrame.Visible = true
-floatBtn.Visible = false
-mainFrame.Visible = false
+for i, tab

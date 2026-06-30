@@ -208,37 +208,37 @@ local function createToggle(parent, text, size, position, callback)
     return frame
 end
 
--- NOVO: Criador do seletor de jogadores (Agora retorna o visor para usar no botão de teleporte)
+-- Criador do seletor de jogadores (AGORA MAIOR E MAIS DESTACADO)
 local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -20, 0, 35)
+    container.Size = UDim2.new(1, -20, 0, 50)
     container.Position = UDim2.new(0, 10, 0, yPos)
     container.BackgroundTransparency = 1
     container.ZIndex = 3
     container.Parent = parent
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Size = UDim2.new(0.4, 0, 1, 0)
     label.Position = UDim2.new(0, 0, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = "Jogador"
     label.TextColor3 = corBranca
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 16
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 3
     label.Parent = container
 
     local visor = Instance.new("TextButton")
-    visor.Size = UDim2.new(0, 150, 0, 30)
-    visor.Position = UDim2.new(1, -150, 0.5, -15)
+    visor.Size = UDim2.new(0, 220, 0, 40)
+    visor.Position = UDim2.new(1, -220, 0.5, -20)
     visor.BackgroundColor3 = corPreta
     visor.BackgroundTransparency = 0.2
     visor.BorderSizePixel = 0
     visor.Text = "Selecionar..."
     visor.TextColor3 = corBranca
-    visor.TextSize = 13
-    visor.Font = Enum.Font.Gotham
+    visor.TextSize = 14
+    visor.Font = Enum.Font.GothamBold
     visor.ZIndex = 3
     visor.Parent = container
 
@@ -248,8 +248,8 @@ local function createPlayerSelector(parent, yPos)
     aplicarNeon(visor, 6, 0.7, corNeon, 10)
 
     local dropDown = Instance.new("Frame")
-    dropDown.Size = UDim2.new(0, 150, 0, 150)
-    dropDown.Position = UDim2.new(1, -150, 1, 5)
+    dropDown.Size = UDim2.new(0, 220, 0, 200)
+    dropDown.Position = UDim2.new(1, -220, 1, 5)
     dropDown.BackgroundColor3 = corPreta
     dropDown.BackgroundTransparency = 0.1
     dropDown.BorderSizePixel = 0
@@ -281,13 +281,13 @@ local function createPlayerSelector(parent, yPos)
         for _, p in pairs(Players:GetPlayers()) do
             if p.Name ~= player.Name then
                 local btn = Instance.new("TextButton")
-                btn.Size = UDim2.new(1, 0, 0, 25)
+                btn.Size = UDim2.new(1, 0, 0, 28)
                 btn.Position = UDim2.new(0, 0, 0, y)
                 btn.BackgroundTransparency = 1
                 btn.Text = p.Name
                 btn.TextColor3 = corBranca
-                btn.TextSize = 13
-                btn.Font = Enum.Font.Gotham
+                btn.TextSize = 14
+                btn.Font = Enum.Font.GothamBold
                 btn.ZIndex = 7
                 btn.Parent = scrollingList
 
@@ -295,7 +295,7 @@ local function createPlayerSelector(parent, yPos)
                     visor.Text = p.Name
                     dropDown.Visible = false
                 end)
-                y = y + 25
+                y = y + 30
             end
         end
         
@@ -320,7 +320,6 @@ local function createPlayerSelector(parent, yPos)
         if dropDown.Visible then updateList() end
     end)
 
-    -- Retorna o visor para que o botão de teleporte consiga ler o nome
     return visor
 end
 
@@ -445,7 +444,6 @@ local function updateContent(tabName)
     end
 
     if tabName == "ℹ️ Inf" then
-        -- Imagem removida e textos centralizados
         local criador = Instance.new("TextLabel")
         criador.Size = UDim2.new(1, -20, 0, 30)
         criador.Position = UDim2.new(0, 10, 0, 30)
@@ -480,22 +478,30 @@ local function updateContent(tabName)
         desc2.Parent = contentArea
 
     elseif tabName == "🔥 Principal" then
-        -- Retorna o visor do seletor para usarmos no botão de teleporte
+        -- Seletor de jogadores (Agora maior e mais destacado!)
         local visor = createPlayerSelector(contentArea, 10)
 
-        local funcs = {"Auto Farm", "Auto Quest", "Auto Boss", "Coletar Itens"}
-        for i, name in ipairs(funcs) do
-            local yPos = 55 + (i-1)*40
-            createToggle(contentArea, name, UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, yPos), function(ativado)
-                print(name, ativado and "LIGADO" or "DESLIGADO")
-            end)
-        end
+        -- NOVAS OPÇÕES SOLICITADAS NO FORMATO EXATO (Kill, Fling, black hole)
+        local toggleSize = UDim2.new(1, -20, 0, 28)
+        local yBase = 70
 
-        createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, 225), corBranca, Enum.Font.GothamBold, 14)
+        createToggle(contentArea, "Kill", toggleSize, UDim2.new(0, 10, 0, yBase), function(ativado)
+            print("Kill", ativado and "LIGADO" or "DESLIGADO")
+        end)
         
-        local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 255), corNeon, corBranca, Enum.Font.GothamBold, 14)
+        createToggle(contentArea, "Fling", toggleSize, UDim2.new(0, 10, 0, yBase + 33), function(ativado)
+            print("Fling", ativado and "LIGADO" or "DESLIGADO")
+        end)
         
-        -- Função de teleporte ligada ao jogador selecionado no visor
+        createToggle(contentArea, "black hole", toggleSize, UDim2.new(0, 10, 0, yBase + 66), function(ativado)
+            print("Black Hole", ativado and "LIGADO" or "DESLIGADO")
+        end)
+
+        -- Teleporte para o jogador escolhido
+        createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, yBase + 105), corBranca, Enum.Font.GothamBold, 14)
+        
+        local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, yBase + 135), corNeon, corBranca, Enum.Font.GothamBold, 14)
+        
         teleportBtn.MouseButton1Click:Connect(function()
             local targetName = visor.Text
             if targetName == "Selecionar..." or targetName == "" then
@@ -509,6 +515,17 @@ local function updateContent(tabName)
                 end
             end
         end)
+
+        -- MANTENDO AS FUNÇÕES ANTIGAS MAIS ABAIXO
+        local funcs = {"Auto Farm", "Auto Quest", "Auto Boss", "Coletar Itens"}
+        local yBaseAntiga = yBase + 175
+        for i, name in ipairs(funcs) do
+            local yPos = yBaseAntiga + (i-1)*33
+            createToggle(contentArea, name, toggleSize, UDim2.new(0, 10, 0, yPos), function(ativado)
+                print(name, ativado and "LIGADO" or "DESLIGADO")
+            end)
+        end
+
     else
         createTextLabel(contentArea, tabName, UDim2.new(1, 0, 0, 30), UDim2.new(0, 10, 0, 10), corBranca, Enum.Font.GothamBold, 18)
         createTextLabel(contentArea, "Conteúdo em desenvolvimento...", UDim2.new(1, 0, 0, 20), UDim2.new(0, 10, 0, 50), corBranca, Enum.Font.Gotham, 14)

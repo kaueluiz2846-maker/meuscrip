@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -145,7 +144,7 @@ local function createTextBox(parent, placeholder, size, position, color, textCol
 end
 
 -- ==========================================
--- TOGGLE CORRIGIDO (USANDO TEXTBUTTON)
+-- TOGGLE SWITCH CORRIGIDO
 -- ==========================================
 
 local function createToggle(parent, text, size, position, callback)
@@ -264,7 +263,7 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADOR (VISOR VERMELHO COM CANTOS ARREDONDADOS)
+-- SELETOR DE JOGADOR (LISTA DINÂMICA CORRIGIDA)
 -- ==========================================
 
 local function createPlayerSelector(parent, yPos)
@@ -287,7 +286,7 @@ local function createPlayerSelector(parent, yPos)
     label.ZIndex = 3
     label.Parent = container
 
-    -- VISOR: QUADRADO COM CANTOS ARREDONDADOS E BORDA GROSSA VERMELHA
+    -- Visor com borda vermelha e cantos arredondados
     local visor = Instance.new("TextButton")
     visor.Size = UDim2.new(0, 220, 0, 38)
     visor.Position = UDim2.new(1, -220, 0.5, -19)
@@ -301,19 +300,15 @@ local function createPlayerSelector(parent, yPos)
     visor.ZIndex = 10
     visor.Parent = container
 
-    -- BORDA VERMELHA VISÍVEL
     local stroke = Instance.new("UIStroke")
     stroke.Color = corNeon
     stroke.Thickness = 2
     stroke.Transparency = 0
     stroke.Parent = visor
 
-    -- CANTOS ARREDONDADOS
     local visorCorner = Instance.new("UICorner")
     visorCorner.CornerRadius = UDim.new(0, 8)
     visorCorner.Parent = visor
-
-    -- NÃO APAGUEI O NEON, APENAS COLOQUEI ELE MAIS SUTIL PARA NÃO POLUIR
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
     local dropDown = Instance.new("Frame")
@@ -331,7 +326,6 @@ local function createPlayerSelector(parent, yPos)
     dropCorner.Parent = dropDown
     aplicarNeon(dropDown, 8, 0.6, corNeon, 12)
 
-    -- A lista será corrigida na próxima atualização grande, mas já deixei a estrutura aqui
     local scrollingList = Instance.new("ScrollingFrame")
     scrollingList.Size = UDim2.new(1, -4, 1, -4)
     scrollingList.Position = UDim2.new(0, 2, 0, 2)
@@ -342,32 +336,56 @@ local function createPlayerSelector(parent, yPos)
     scrollingList.ZIndex = 51
     scrollingList.Parent = dropDown
 
-    -- Lista de exemplo para você ver a estrutura
-    local y = 0
-    for i = 1, 3 do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 28)
-        btn.Position = UDim2.new(0, 0, 0, y)
-        btn.BackgroundTransparency = 1
-        btn.Text = "Jogador "..i
-        btn.TextColor3 = corBranca
-        btn.TextSize = 14
-        btn.Font = Enum.Font.GothamBold
-        btn.ZIndex = 52
-        btn.Parent = scrollingList
-        y = y + 30
+    -- Função de atualizar a lista (corrigida com sua instrução)
+    local function updateList()
+        for _, child in ipairs(scrollingList:GetChildren()) do
+            if child:IsA("TextButton") or child:IsA("TextLabel") then
+                child:Destroy()
+            end
+        end
+
+        local y = 0
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player then
+                local btn = Instance.new("TextButton")
+                btn.Size = UDim2.new(1, 0, 0, 30)
+                btn.Position = UDim2.new(0, 0, 0, y)
+                btn.BackgroundTransparency = 1
+                btn.Text = p.Name
+                btn.TextColor3 = corBranca
+                btn.TextSize = 14
+                btn.Font = Enum.Font.GothamBold
+                btn.ZIndex = 52
+                btn.Parent = scrollingList
+
+                btn.MouseButton1Click:Connect(function()
+                    visor.Text = p.Name
+                    dropDown.Visible = false
+                end)
+                y = y + 32
+            end
+        end
+        scrollingList.CanvasSize = UDim2.new(0, 0, 0, y)
     end
-    scrollingList.CanvasSize = UDim2.new(0, 0, 0, y)
-    
+
+    -- Eventos de tempo real (PlayerAdded e PlayerRemoving)
+    Players.PlayerAdded:Connect(function()
+        if dropDown.Visible then updateList() end
+    end)
+    Players.PlayerRemoving:Connect(function()
+        if dropDown.Visible then updateList() end
+    end)
+
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
+        if dropDown.Visible then updateList() end
     end)
 
     return visor
 end
 
 -- ==========================================
--- SELETOR DE MÉTODO (VISOR VERMELHO COM CANTOS ARREDONDADOS)
+-- SELETOR DE MÉTODO
 -- ==========================================
 
 local function createMethodSelector(parent, yPos)
@@ -412,7 +430,6 @@ local function createMethodSelector(parent, yPos)
     local visorCorner = Instance.new("UICorner")
     visorCorner.CornerRadius = UDim.new(0, 8)
     visorCorner.Parent = visor
-
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
     local dropDown = Instance.new("Frame")
@@ -574,7 +591,6 @@ contentArea.CanvasSize = UDim2.new(0, 0, 0, 500)
 contentArea.ZIndex = 3
 contentArea.Parent = mainFrame
 
--- ABA "⚡ Jogador" AGORA FICA IMEDIATAMENTE ACIMA DE "⚙️ Config"
 local tabs = {"ℹ️ Inf", "🔥 Principal", "👤 Avatar", "🌍 Mundo", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚡ Jogador", "⚙️ Config"}
 local tabButtons = {}
 local selectedTab = "ℹ️ Inf"
@@ -632,7 +648,7 @@ local function updateContent(tabName)
         local toggleSize = UDim2.new(1, -20, 0, 28)
         local yBase = 140 
 
-        -- KILL > (Botão de ação)
+        -- KILL > (Botão)
         createActionButton(contentArea, "Kill", toggleSize, UDim2.new(0, 10, 0, yBase), function()
             local targetName = visorJogador.Text
             if targetName == "Selecionar..." or targetName == "" then return end
@@ -652,22 +668,31 @@ local function updateContent(tabName)
             print("Black Hole Ativado:", ativado)
         end)
 
-        -- Teleporte (Área separada)
-        createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, yBase + 110), corBranca, Enum.Font.GothamBold, 14)
-        local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, yBase + 140), corNeon, corBranca, Enum.Font.GothamBold, 14)
-        teleportBtn.MouseButton1Click:Connect(function()
+        -- VIEW (Novo Toggle)
+        createToggle(contentArea, "View", toggleSize, UDim2.new(0, 10, 0, yBase + 105), function(ativado)
+            print("View Ativado:", ativado)
+        end)
+
+        -- TELEPORT (Novo Botão >)
+        createActionButton(contentArea, "Teleport", toggleSize, UDim2.new(0, 10, 0, yBase + 140), function()
             local targetName = visorJogador.Text
-            if targetName == "Selecionar..." or targetName == "" then return end
+            if targetName == "Selecionar..." or targetName == "" then
+                print("Nenhum jogador selecionado para teleporte.")
+                return
+            end
             local targetPlayer = Players:FindFirstChild(targetName)
             if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local localChar = player.Character
                 if localChar and localChar:FindFirstChild("HumanoidRootPart") then
                     localChar.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                    print("Teleportado para:", targetName)
                 end
+            else
+                print("Jogador inválido ou sem character.")
             end
         end)
 
-        contentArea.CanvasSize = UDim2.new(0, 0, 0, yBase + 185)
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, yBase + 180)
 
     elseif tabName == "👤 Avatar" then
         local visorAvatar = createPlayerSelector(contentArea, 10)
@@ -682,7 +707,7 @@ local function updateContent(tabName)
 
     elseif tabName == "⚡ Jogador" then
         
-        -- Função para atualizar os stats no personagem
+        -- Função para atualizar os stats
         local function updatePlayerStats(stat, value)
             if player.Character and player.Character:FindFirstChild("Humanoid") then
                 local hum = player.Character:FindFirstChild("Humanoid")
@@ -697,6 +722,7 @@ local function updateContent(tabName)
             end
         end
 
+        -- NOVO SLIDER CORRIGIDO (USANDO SUA SOLUÇÃO)
         local function createSlider(parent, text, yPos, defaultVal, minVal, maxVal, statName)
             local frame = Instance.new("Frame")
             frame.Size = UDim2.new(1, -20, 0, 40)
@@ -733,6 +759,7 @@ local function updateContent(tabName)
             sliderFrame.Position = UDim2.new(1, -190, 0.5, -4)
             sliderFrame.BackgroundColor3 = corCinza
             sliderFrame.BorderSizePixel = 0
+            sliderFrame.Active = true -- Ajuda na captura de input
             sliderFrame.ZIndex = 3
             sliderFrame.Parent = frame
 
@@ -752,8 +779,8 @@ local function updateContent(tabName)
             fillCorner.Parent = fillBar
 
             local sliderBtn = Instance.new("TextButton")
-            sliderBtn.Size = UDim2.new(0, 16, 0, 16)
-            sliderBtn.Position = UDim2.new((defaultVal - minVal) / (maxVal - minVal), -8, 0.5, -8)
+            sliderBtn.Size = UDim2.new(0, 20, 0, 20) -- Aumentei o tamanho do clique
+            sliderBtn.Position = UDim2.new((defaultVal - minVal) / (maxVal - minVal), -10, 0.5, -10)
             sliderBtn.BackgroundColor3 = corBranca
             sliderBtn.Text = ""
             sliderBtn.AutoButtonColor = false
@@ -765,23 +792,17 @@ local function updateContent(tabName)
             sliderCornerBtn.CornerRadius = UDim.new(1, 0)
             sliderCornerBtn.Parent = sliderBtn
 
+            -- Variável de arrasto e valor atual
             local dragging = false
             local currentVal = defaultVal
 
-            -- CORREÇÃO DA BARRA: USANDO RUNSERVICE PARA ATUALIZAR SEGURANDO O MOUSE
-            local function updateSlider(input)
-                local pos = input.Position.X
-                local sizeX = sliderFrame.AbsoluteSize.X
-                local startX = sliderFrame.AbsolutePosition.X
-                local percent = math.clamp((pos - startX) / sizeX, 0, 1)
-                currentVal = math.floor(minVal + percent * (maxVal - minVal))
-                
-                fillBar.Size = UDim2.new(percent, 0, 1, 0)
-                sliderBtn.Position = UDim2.new(percent, -8, 0.5, -8)
-                valueDisplay.Text = tostring(currentVal)
-                updatePlayerStats(statName, currentVal)
+            -- Aplica o valor inicial no personagem
+            local char = player.Character
+            if char and char:FindFirstChild("Humanoid") then
+                updatePlayerStats(statName, defaultVal)
             end
 
+            -- Captura de início e fim do arrasto
             sliderBtn.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = true
@@ -794,23 +815,34 @@ local function updateContent(tabName)
                 end
             end)
 
-            -- USANDO RENDERSTEPPED PARA QUE A BARRA NÃO TRAVE E FIQUE SÓLIDA ENQUANTO ARRASTA
-            RunService.RenderStepped:Connect(function()
-                if dragging then
-                    local mouse = UserInputService:GetMouseLocation()
-                    local fakeInput = {Position = mouse}
-                    updateSlider(fakeInput)
-                end
-            end)
+            -- Captura de movimento do mouse (CORRIGIDO COM SUA INSTRUÇÃO)
+            UserInputService.InputChanged:Connect(function(input)
+                if not dragging then return end
+                if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
 
-            -- Aplica o valor inicial
-            local char = player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                updatePlayerStats(statName, defaultVal)
-            end
+                -- Pega coordenadas absolutas do mouse
+                local pos = input.Position.X
+                -- Pega coordenadas absolutas do inicio da barra de fundo (sliderFrame)
+                local startX = sliderFrame.AbsolutePosition.X
+                -- Pega o tamanho absoluto da barra de fundo
+                local sizeX = sliderFrame.AbsoluteSize.X
+
+                -- Calcula o percentual do arrasto baseado no mundo real
+                local percent = math.clamp((pos - startX) / sizeX, 0, 1)
+
+                -- Calcula o valor numérico real
+                currentVal = math.floor(minVal + percent * (maxVal - minVal))
+
+                -- Atualiza UI
+                fillBar.Size = UDim2.new(percent, 0, 1, 0)
+                sliderBtn.Position = UDim2.new(percent, -10, 0.5, -10)
+                valueDisplay.Text = tostring(currentVal)
+
+                -- Atualiza o personagem
+                updatePlayerStats(statName, currentVal)
+            end)
         end
 
-        -- Criação dos 3 sliders na aba Jogador
         createSlider(contentArea, "Velocidade", 10, 16, 0, 100, "Velocidade")
         createSlider(contentArea, "Pulo", 60, 50, 0, 300, "Pulo")
         createSlider(contentArea, "Gravidade", 110, 196, 0, 500, "Gravidade")

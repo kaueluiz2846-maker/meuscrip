@@ -574,12 +574,117 @@ local function updateContent(tabName)
         desc2.Font = Enum.Font.Gotham
         desc2.ZIndex = 3
         desc2.Parent = contentArea
+        
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
 
     elseif tabName == "🔥 Principal" then
-        local visorJogador = createPlayerSelector(contentArea, 10) -- Seleciona jogador
-        local visorMetodo = createMethodSelector(contentArea, 70)   -- Seleciona método (ball, bus, boat)
+        local visorJogador = createPlayerSelector(contentArea, 10)
+        local visorMetodo = createMethodSelector(contentArea, 70)
 
         local toggleSize = UDim2.new(1, -20, 0, 28)
 
-        -- BOTÃO KILL (Apenas botão normal)
-        local killBtn = createTextButton(contentArea, "KILL (Único)", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 140), corNeonEscuro, corBran
+        -- BOTÃO KILL
+        local killBtn = createTextButton(contentArea, "KILL (Único)", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 140), corNeonEscuro, corBranca, Enum.Font.GothamBold, 14)
+        killBtn.MouseButton1Click:Connect(function()
+            local targetName = visorJogador.Text
+            if targetName == "Selecionar..." or targetName == "" then return end
+            local targetPlayer = Players:FindFirstChild(targetName)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+                targetPlayer.Character.Humanoid.Health = 0
+            end
+        end)
+
+        -- TOGGLES
+        createToggle(contentArea, "Fling", toggleSize, UDim2.new(0, 10, 0, 200), function(ativado)
+            print("Fling:", ativado)
+        end)
+
+        createToggle(contentArea, "black hole", toggleSize, UDim2.new(0, 10, 0, 240), function(ativado)
+            print("Black Hole:", ativado)
+        end)
+
+        -- TELEPORTE
+        createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, 290), corBranca, Enum.Font.GothamBold, 14)
+        local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 320), corNeon, corBranca, Enum.Font.GothamBold, 14)
+        teleportBtn.MouseButton1Click:Connect(function()
+            local targetName = visorJogador.Text
+            if targetName == "Selecionar..." or targetName == "" then return end
+            local targetPlayer = Players:FindFirstChild(targetName)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local localChar = player.Character
+                if localChar and localChar:FindFirstChild("HumanoidRootPart") then
+                    localChar.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                end
+            end
+        end)
+
+        -- FUNÇÕES ANTIGAS
+        local funcs = {"Auto Farm", "Auto Quest", "Auto Boss", "Coletar Itens"}
+        local yBaseAntiga = 380
+        for i, name in ipairs(funcs) do
+            local yPos = yBaseAntiga + (i-1)*33
+            createToggle(contentArea, name, toggleSize, UDim2.new(0, 10, 0, yPos), function(ativado)
+                print(name, ativado)
+            end)
+        end
+        
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, yBaseAntiga + (#funcs * 33) + 20)
+
+    else
+        createTextLabel(contentArea, tabName, UDim2.new(1, 0, 0, 30), UDim2.new(0, 10, 0, 10), corBranca, Enum.Font.GothamBold, 18)
+        createTextLabel(contentArea, "Conteúdo em desenvolvimento...", UDim2.new(1, 0, 0, 20), UDim2.new(0, 10, 0, 50), corBranca, Enum.Font.Gotham, 14)
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
+    end
+end
+
+local function selectTab(tabName)
+    for _, btn in pairs(tabButtons) do
+        local ind = btn:FindFirstChild("Indicator")
+        if ind then
+            if btn.Text == tabName then
+                ind.BackgroundTransparency = 0
+                btn.TextColor3 = corBranca
+            else
+                ind.BackgroundTransparency = 1
+                btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+            end
+        end
+    end
+    selectedTab = tabName
+    updateContent(tabName)
+end
+
+local function createTabButton(text, yPos)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -12, 0, 30)
+    btn.Position = UDim2.new(0, 6, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.BackgroundTransparency = 0
+    btn.BorderSizePixel = 0
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    btn.TextScaled = false
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.ZIndex = 3
+    btn.Parent = tabPanel
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    local indicator = Instance.new("Frame")
+    indicator.Name = "Indicator"
+    indicator.Size = UDim2.new(0, 3, 1, -8)
+    indicator.Position = UDim2.new(0, 2, 0, 4)
+    indicator.BackgroundColor3 = corNeon
+    indicator.BackgroundTransparency = 1
+    indicator.BorderSizePixel = 0
+    indicator.ZIndex = 4
+    indicator.Parent = btn
+
+    local indicatorCorner = Instance.new("UICorner")
+    indicatorCorner.CornerRadius = UDim.new(0, 2)
+    indicatorCorner.Parent = indicator
+
+    btn.MouseButton1Click

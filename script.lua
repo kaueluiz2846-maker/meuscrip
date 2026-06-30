@@ -12,6 +12,11 @@ local corBranca = Color3.fromRGB(255, 255, 255)
 local corCinza = Color3.fromRGB(60, 60, 60)
 
 -- ==========================================
+-- VARIÁVEIS PRINCIPAIS (declaradas cedo para poder usar nas funções)
+-- ==========================================
+local mainFrame = nil  -- será atribuído depois
+
+-- ==========================================
 -- FUNÇÕES BÁSICAS DE CRIAÇÃO DE UI
 -- ==========================================
 
@@ -263,15 +268,10 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADOR (CORRIGIDO COM SUAS INSTRUÇÕES)
+-- SELETOR DE JOGADOR (AGORA COM DROPDOWN NO MAINFRAME)
 -- ==========================================
 
--- Variáveis globais para guardar os seletores e evitar recriação
-local cachedPlayerSelector = nil
-local cachedMethodSelector = nil
-local cachedAvatarSelector = nil
-
-local function createPlayerSelector(parent, yPos)
+local function createPlayerSelector(parent, yPos, dropdownParent)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 55)
     container.Position = UDim2.new(0, 10, 0, yPos)
@@ -291,7 +291,6 @@ local function createPlayerSelector(parent, yPos)
     label.ZIndex = 3
     label.Parent = container
 
-    -- Visor com borda vermelha e cantos arredondados
     local visor = Instance.new("TextButton")
     visor.Size = UDim2.new(0, 220, 0, 38)
     visor.Position = UDim2.new(1, -220, 0.5, -19)
@@ -316,15 +315,15 @@ local function createPlayerSelector(parent, yPos)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
+    -- Dropdown agora é filho do dropdownParent (mainFrame), não do container
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 200)
-    dropDown.Position = UDim2.new(1, -220, 1, 5)
     dropDown.BackgroundColor3 = corPreta
     dropDown.BackgroundTransparency = 0.1
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
-    dropDown.ZIndex = 50
-    dropDown.Parent = container
+    dropDown.ZIndex = 100  -- bem alto para sobrepor tudo
+    dropDown.Parent = dropdownParent
 
     local dropCorner = Instance.new("UICorner")
     dropCorner.CornerRadius = UDim.new(0, 8)
@@ -338,10 +337,9 @@ local function createPlayerSelector(parent, yPos)
     scrollingList.BorderSizePixel = 0
     scrollingList.ScrollBarThickness = 4
     scrollingList.ScrollBarImageColor3 = corNeon
-    scrollingList.ZIndex = 51
+    scrollingList.ZIndex = 101
     scrollingList.Parent = dropDown
 
-    -- Função de atualizar a lista (CORRIGIDA)
     local function updateList()
         for _, child in ipairs(scrollingList:GetChildren()) do
             if child:IsA("TextButton") or child:IsA("TextLabel") then
@@ -360,7 +358,7 @@ local function createPlayerSelector(parent, yPos)
                 btn.TextColor3 = corBranca
                 btn.TextSize = 14
                 btn.Font = Enum.Font.GothamBold
-                btn.ZIndex = 52
+                btn.ZIndex = 102
                 btn.Parent = scrollingList
 
                 btn.MouseButton1Click:Connect(function()
@@ -373,28 +371,39 @@ local function createPlayerSelector(parent, yPos)
         scrollingList.CanvasSize = UDim2.new(0, 0, 0, y)
     end
 
-    -- Eventos de tempo real CORRIGIDOS (Atualizam SEMPRE, independente do dropdown)
-    local function refreshOnChange()
-        updateList()
+    -- Posiciona o dropdown exatamente abaixo do visor (em coordenadas de tela)
+    local function updateDropdownPosition()
+        local absPos = visor.AbsolutePosition
+        local absSize = visor.AbsoluteSize
+        dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
     end
 
-    Players.PlayerAdded:Connect(refreshOnChange)
-    Players.PlayerRemoving:Connect(refreshOnChange)
-
-    -- Ação de clique CORRIGIDA (Abre e chama update SEMPRE)
+    -- Atualiza posição sempre que o dropdown for exibido
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
-        updateList()
+        if dropDown.Visible then
+            updateDropdownPosition()
+            updateList()
+        end
     end)
+
+    -- Atualiza lista quando jogadores entram/saem (mesmo se dropdown não estiver visível)
+    local function refreshOnChange()
+        if dropDown.Visible then
+            updateList()
+        end
+    end
+    Players.PlayerAdded:Connect(refreshOnChange)
+    Players.PlayerRemoving:Connect(refreshOnChange)
 
     return container
 end
 
 -- ==========================================
--- SELETOR DE MÉTODO
+-- SELETOR DE MÉTODO (MESMA CORREÇÃO)
 -- ==========================================
 
-local function createMethodSelector(parent, yPos)
+local function createMethodSelector(parent, yPos, dropdownParent)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 55)
     container.Position = UDim2.new(0, 10, 0, yPos)
@@ -438,15 +447,15 @@ local function createMethodSelector(parent, yPos)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
+    -- Dropdown filho do dropdownParent
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 110)
-    dropDown.Position = UDim2.new(1, -220, 1, 5)
     dropDown.BackgroundColor3 = corPreta
     dropDown.BackgroundTransparency = 0.1
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
-    dropDown.ZIndex = 50
-    dropDown.Parent = container
+    dropDown.ZIndex = 100
+    dropDown.Parent = dropdownParent
 
     local dropCorner = Instance.new("UICorner")
     dropCorner.CornerRadius = UDim.new(0, 8)
@@ -458,7 +467,7 @@ local function createMethodSelector(parent, yPos)
     list.Position = UDim2.new(0, 2, 0, 2)
     list.BackgroundTransparency = 1
     list.BorderSizePixel = 0
-    list.ZIndex = 51
+    list.ZIndex = 101
     list.Parent = dropDown
 
     local y = 0
@@ -472,7 +481,7 @@ local function createMethodSelector(parent, yPos)
         btn.TextColor3 = corBranca
         btn.TextSize = 14
         btn.Font = Enum.Font.GothamBold
-        btn.ZIndex = 52
+        btn.ZIndex = 102
         btn.Parent = list
 
         btn.MouseButton1Click:Connect(function()
@@ -482,8 +491,17 @@ local function createMethodSelector(parent, yPos)
         y = y + 30
     end
 
+    local function updateDropdownPosition()
+        local absPos = visor.AbsolutePosition
+        local absSize = visor.AbsoluteSize
+        dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
+    end
+
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
+        if dropDown.Visible then
+            updateDropdownPosition()
+        end
     end)
 
     return container
@@ -540,7 +558,8 @@ floatBtn.Visible = false
 
 makeDraggable(floatBtn, floatBtn)
 
-local mainFrame = createRoundedFrame(screenGui, UDim2.new(0, 580, 0, 420), UDim2.new(0.5, -290, 0.5, -210), corPreta, 0, 12)
+-- ATRIBUIÇÃO DO mainFrame (agora a variável existe)
+mainFrame = createRoundedFrame(screenGui, UDim2.new(0, 580, 0, 420), UDim2.new(0.5, -290, 0.5, -210), corPreta, 0, 12)
 mainFrame.Visible = false
 aplicarNeon(mainFrame, 16, 0.65, corNeon, 16)
 aplicarNeon(mainFrame, 8, 0.45, corNeon, 14)
@@ -578,8 +597,6 @@ tabPanel.Size = UDim2.new(0, 120, 1, -42)
 tabPanel.Position = UDim2.new(0, 0, 0, 42)
 tabPanel.BackgroundColor3 = Color3.fromHex("141414")
 tabPanel.BackgroundTransparency = 0
-tabPanel.BorderSizePixel = 0
-tabPanel.ZIndex = 2
 tabPanel.Parent = mainFrame
 
 local tabPanelCorner = Instance.new("UICorner")
@@ -647,87 +664,97 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
 
     elseif tabName == "🔥 Principal" then
-        -- CRIAÇÃO/REAPROVEITAMENTO DOS SELETORES (CORRIGIDO PARA NÃO RECRIAR)
-        if not cachedPlayerSelector then
-            cachedPlayerSelector = createPlayerSelector(contentArea, 10)
-        else
-            cachedPlayerSelector.Parent = contentArea
-        end
-        
-        if not cachedMethodSelector then
-            cachedMethodSelector = createMethodSelector(contentArea, 68)
-        else
-            cachedMethodSelector.Parent = contentArea
-        end
+        -- Passamos mainFrame como dropdownParent para os seletores
+        createPlayerSelector(contentArea, 10, mainFrame)
+        createMethodSelector(contentArea, 68, mainFrame)
 
         local toggleSize = UDim2.new(1, -20, 0, 28)
         local yBase = 140 
 
-        -- KILL > (Botão)
+        -- KILL
         createActionButton(contentArea, "Kill", toggleSize, UDim2.new(0, 10, 0, yBase), function()
-            local targetName = cachedPlayerSelector:FindFirstChild("TextButton", true).Text
-            if targetName == "Selecionar..." or targetName == "" then return end
+            -- Como o playerSelector não é retornado, precisamos acessar o visor. Vamos simplificar e pegar o texto do visor.
+            -- Podemos encontrar o container de jogador e seu visor.
+            local containers = contentArea:GetChildren()
+            local targetName = "Selecionar..."
+            for _, c in ipairs(containers) do
+                if c:IsA("Frame") and c:FindFirstChild("TextButton") then
+                    local v = c:FindFirstChild("TextButton")
+                    if v and v.Text ~= "Selecionar..." and v.Text ~= "" then
+                        targetName = v.Text
+                        break
+                    end
+                end
+            end
+            if targetName == "Selecionar..." then return end
             local targetPlayer = Players:FindFirstChild(targetName)
             if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
                 targetPlayer.Character.Humanoid.Health = 0
             end
         end)
 
-        -- FLING (Toggle)
+        -- FLING
         createToggle(contentArea, "Fling", toggleSize, UDim2.new(0, 10, 0, yBase + 35), function(ativado)
             print("Fling Ativado:", ativado)
         end)
 
-        -- BLACK HOLE (Toggle)
+        -- BLACK HOLE
         createToggle(contentArea, "black hole", toggleSize, UDim2.new(0, 10, 0, yBase + 70), function(ativado)
             print("Black Hole Ativado:", ativado)
         end)
 
-        -- VIEW (Novo Toggle)
+        -- VIEW
         createToggle(contentArea, "View", toggleSize, UDim2.new(0, 10, 0, yBase + 105), function(ativado)
             print("View Ativado:", ativado)
         end)
 
-        -- TELEPORT (Novo Botão >)
+        -- TELEPORT
         createActionButton(contentArea, "Teleport", toggleSize, UDim2.new(0, 10, 0, yBase + 140), function()
-            local targetName = cachedPlayerSelector:FindFirstChild("TextButton", true).Text
-            if targetName == "Selecionar..." or targetName == "" then
-                print("Nenhum jogador selecionado para teleporte.")
-                return
+            local containers = contentArea:GetChildren()
+            local targetName = "Selecionar..."
+            for _, c in ipairs(containers) do
+                if c:IsA("Frame") and c:FindFirstChild("TextButton") then
+                    local v = c:FindFirstChild("TextButton")
+                    if v and v.Text ~= "Selecionar..." and v.Text ~= "" then
+                        targetName = v.Text
+                        break
+                    end
+                end
             end
+            if targetName == "Selecionar..." then return end
             local targetPlayer = Players:FindFirstChild(targetName)
             if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local localChar = player.Character
                 if localChar and localChar:FindFirstChild("HumanoidRootPart") then
                     localChar.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
-                    print("Teleportado para:", targetName)
                 end
-            else
-                print("Jogador inválido ou sem character.")
             end
         end)
 
         contentArea.CanvasSize = UDim2.new(0, 0, 0, yBase + 180)
 
     elseif tabName == "👤 Avatar" then
-        -- CRIAÇÃO/REAPROVEITAMENTO DO SELETOR DE AVATAR
-        if not cachedAvatarSelector then
-            cachedAvatarSelector = createPlayerSelector(contentArea, 10)
-        else
-            cachedAvatarSelector.Parent = contentArea
-        end
+        createPlayerSelector(contentArea, 10, mainFrame)
         
         createActionButton(contentArea, "Copy avatar", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 75), function()
-            local targetName = cachedAvatarSelector:FindFirstChild("TextButton", true).Text
-            if targetName == "Selecionar..." or targetName == "" then return end
+            local containers = contentArea:GetChildren()
+            local targetName = "Selecionar..."
+            for _, c in ipairs(containers) do
+                if c:IsA("Frame") and c:FindFirstChild("TextButton") then
+                    local v = c:FindFirstChild("TextButton")
+                    if v and v.Text ~= "Selecionar..." and v.Text ~= "" then
+                        targetName = v.Text
+                        break
+                    end
+                end
+            end
+            if targetName == "Selecionar..." then return end
             print("Copiando avatar do jogador:", targetName)
         end)
         
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
 
     elseif tabName == "⚡ Jogador" then
-        
-        -- Função para atualizar os stats
         local function updatePlayerStats(stat, value)
             if player.Character and player.Character:FindFirstChild("Humanoid") then
                 local hum = player.Character:FindFirstChild("Humanoid")
@@ -742,7 +769,6 @@ local function updateContent(tabName)
             end
         end
 
-        -- SLIDER CORRIGIDO E 100% FUNCIONAL
         local function createSlider(parent, text, yPos, defaultVal, minVal, maxVal, statName)
             local frame = Instance.new("Frame")
             frame.Size = UDim2.new(1, -20, 0, 40)
@@ -815,27 +841,23 @@ local function updateContent(tabName)
             local dragging = false
             local currentVal = defaultVal
 
-            -- Aplica o valor inicial
             local char = player.Character
             if char and char:FindFirstChild("Humanoid") then
                 updatePlayerStats(statName, defaultVal)
             end
 
-            -- Captura de início
             sliderBtn.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = true
                 end
             end)
 
-            -- Captura de fim
             UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     dragging = false
                 end
             end)
 
-            -- CAPTURA DE MOVIMENTO DO MOUSE (CORRIGIDO COM SUA INSTRUÇÃO)
             UserInputService.InputChanged:Connect(function(input)
                 if not dragging then return end
                 if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end

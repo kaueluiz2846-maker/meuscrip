@@ -208,7 +208,7 @@ local function createToggle(parent, text, size, position, callback)
     return frame
 end
 
--- NOVO: Criador do seletor de jogadores
+-- NOVO: Criador do seletor de jogadores (Agora retorna o visor para usar no botão de teleporte)
 local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 35)
@@ -279,7 +279,7 @@ local function createPlayerSelector(parent, yPos)
 
         local y = 0
         for _, p in pairs(Players:GetPlayers()) do
-            if p.Name ~= player.Name then -- Opção: ignorar o próprio jogador
+            if p.Name ~= player.Name then
                 local btn = Instance.new("TextButton")
                 btn.Size = UDim2.new(1, 0, 0, 25)
                 btn.Position = UDim2.new(0, 0, 0, y)
@@ -320,7 +320,8 @@ local function createPlayerSelector(parent, yPos)
         if dropDown.Visible then updateList() end
     end)
 
-    return container
+    -- Retorna o visor para que o botão de teleporte consiga ler o nome
+    return visor
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -479,10 +480,9 @@ local function updateContent(tabName)
         desc2.Parent = contentArea
 
     elseif tabName == "🔥 Principal" then
-        -- NOVO: Seletor de jogadores na primeira opção
-        createPlayerSelector(contentArea, 10)
+        -- Retorna o visor do seletor para usarmos no botão de teleporte
+        local visor = createPlayerSelector(contentArea, 10)
 
-        -- Toggles deslocados para baixo
         local funcs = {"Auto Farm", "Auto Quest", "Auto Boss", "Coletar Itens"}
         for i, name in ipairs(funcs) do
             local yPos = 55 + (i-1)*40
@@ -492,7 +492,23 @@ local function updateContent(tabName)
         end
 
         createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, 225), corBranca, Enum.Font.GothamBold, 14)
-        createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 255), corNeon, corBranca, Enum.Font.GothamBold, 14)
+        
+        local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 255), corNeon, corBranca, Enum.Font.GothamBold, 14)
+        
+        -- Função de teleporte ligada ao jogador selecionado no visor
+        teleportBtn.MouseButton1Click:Connect(function()
+            local targetName = visor.Text
+            if targetName == "Selecionar..." or targetName == "" then
+                return
+            end
+            local targetPlayer = Players:FindFirstChild(targetName)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local localChar = player.Character
+                if localChar and localChar:FindFirstChild("HumanoidRootPart") then
+                    localChar.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                end
+            end
+        end)
     else
         createTextLabel(contentArea, tabName, UDim2.new(1, 0, 0, 30), UDim2.new(0, 10, 0, 10), corBranca, Enum.Font.GothamBold, 18)
         createTextLabel(contentArea, "Conteúdo em desenvolvimento...", UDim2.new(1, 0, 0, 20), UDim2.new(0, 10, 0, 50), corBranca, Enum.Font.Gotham, 14)
@@ -571,7 +587,6 @@ verifyBtn.MouseButton1Click:Connect(function()
 
     if trimmedInput == "menu k" or trimmedInput == "menuk" then
         keyBox.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-        TweenService:Create(keyBox, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(0, 200, 0)
         TweenService:Create(keyBox, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(30,30,30)}):Play()
 
         keyFrame.Visible = false

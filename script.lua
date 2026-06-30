@@ -11,20 +11,12 @@ local corNeonEscuro = Color3.fromRGB(139, 0, 0)
 local corBranca = Color3.fromRGB(255, 255, 255)
 local corCinza = Color3.fromRGB(60, 60, 60)
 
--- ==========================================
--- VARIÁVEIS PRINCIPAIS
--- ==========================================
 local mainFrame = nil
 local dropdownLayer = nil
-
--- ==========================================
--- FUNÇÕES BÁSICAS DE CRIAÇÃO DE UI
--- ==========================================
 
 local function makeDraggable(frame, dragHandle)
     local dragging = false
     local dragStart, startPos
-
     dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
@@ -32,13 +24,11 @@ local function makeDraggable(frame, dragHandle)
             startPos = frame.Position
         end
     end)
-
     dragHandle.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
@@ -56,11 +46,9 @@ local function aplicarNeon(parent, tamanhoExtra, transparencia, cor, raio)
     glow.BorderSizePixel = 0
     glow.ZIndex = 1
     glow.Parent = parent
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, raio)
     corner.Parent = glow
-
     parent.ZIndex = 2
     return glow
 end
@@ -74,11 +62,9 @@ local function createRoundedFrame(parent, size, position, color, transparency, c
     frame.BorderSizePixel = 0
     frame.ZIndex = 2
     frame.Parent = parent
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, cornerRadius or 8)
     corner.Parent = frame
-
     return frame
 end
 
@@ -113,14 +99,11 @@ local function createTextButton(parent, text, size, position, color, textColor, 
     btn.Font = font or Enum.Font.GothamBold
     btn.ZIndex = 2
     btn.Parent = parent
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
-
     aplicarNeon(btn, 14, 0.7, corNeon, 10)
     aplicarNeon(btn, 8, 0.5, corNeon, 8)
-
     return btn
 end
 
@@ -140,18 +123,12 @@ local function createTextBox(parent, placeholder, size, position, color, textCol
     box.ClearTextOnFocus = false
     box.ZIndex = 2
     box.Parent = parent
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = box
-
     aplicarNeon(box, 6, 0.8, corNeon, 10)
     return box
 end
-
--- ==========================================
--- TOGGLE SWITCH CORRIGIDO
--- ==========================================
 
 local function createToggle(parent, text, size, position, callback)
     local frame = Instance.new("Frame")
@@ -160,7 +137,6 @@ local function createToggle(parent, text, size, position, callback)
     frame.BackgroundTransparency = 1
     frame.ZIndex = 3
     frame.Parent = parent
-
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.7, 0, 1, 0)
     label.Position = UDim2.new(0, 0, 0, 0)
@@ -173,7 +149,6 @@ local function createToggle(parent, text, size, position, callback)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 3
     label.Parent = frame
-
     local toggleFrame = Instance.new("TextButton")
     toggleFrame.Size = UDim2.new(0, 44, 0, 22)
     toggleFrame.Position = UDim2.new(1, -44, 0.5, -11)
@@ -183,11 +158,9 @@ local function createToggle(parent, text, size, position, callback)
     toggleFrame.BorderSizePixel = 0
     toggleFrame.ZIndex = 3
     toggleFrame.Parent = frame
-
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(1, 0)
     toggleCorner.Parent = toggleFrame
-
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 18, 0, 18)
     knob.Position = UDim2.new(0, 2, 0.5, -9)
@@ -195,13 +168,10 @@ local function createToggle(parent, text, size, position, callback)
     knob.BorderSizePixel = 0
     knob.ZIndex = 4
     knob.Parent = toggleFrame
-
     local knobCorner = Instance.new("UICorner")
     knobCorner.CornerRadius = UDim.new(1, 0)
     knobCorner.Parent = knob
-
     local ativado = false
-
     local function atualizarVisual()
         if ativado then
             TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = corNeon}):Play()
@@ -211,21 +181,14 @@ local function createToggle(parent, text, size, position, callback)
             TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -9)}):Play()
         end
     end
-
     atualizarVisual()
-
     toggleFrame.MouseButton1Click:Connect(function()
         ativado = not ativado
         atualizarVisual()
         if callback then callback(ativado) end
     end)
-
     return frame
 end
-
--- ==========================================
--- BOTÃO DE AÇÃO (COM SETA >)
--- ==========================================
 
 local function createActionButton(parent, text, size, position, callback)
     local frame = Instance.new("Frame")
@@ -234,7 +197,6 @@ local function createActionButton(parent, text, size, position, callback)
     frame.BackgroundTransparency = 1
     frame.ZIndex = 3
     frame.Parent = parent
-
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.7, 0, 1, 0)
     label.Position = UDim2.new(0, 0, 0, 0)
@@ -247,7 +209,6 @@ local function createActionButton(parent, text, size, position, callback)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 3
     label.Parent = frame
-
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 44, 0, 22)
     btn.Position = UDim2.new(1, -44, 0.5, -11)
@@ -259,17 +220,15 @@ local function createActionButton(parent, text, size, position, callback)
     btn.BorderSizePixel = 0
     btn.ZIndex = 3
     btn.Parent = frame
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = btn
-    
     btn.MouseButton1Click:Connect(callback)
     return frame
 end
 
 -- ==========================================
--- SELETOR DE JOGADOR (USANDO DROPDOWNLAYER CORRIGIDO)
+-- SELETOR DE JOGADOR (COM A LÓGICA DO SEU SCRIPT DE TESTE)
 -- ==========================================
 
 local function createPlayerSelector(parent, yPos, dropdownParent)
@@ -331,8 +290,8 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     aplicarNeon(dropDown, 8, 0.6, corNeon, 12)
 
     local scrollingList = Instance.new("ScrollingFrame")
-    scrollingList.Size = UDim2.new(1, -4, 1, -4)
-    scrollingList.Position = UDim2.new(0, 2, 0, 2)
+    scrollingList.Size = UDim2.new(1, -10, 1, -10)
+    scrollingList.Position = UDim2.new(0, 5, 0, 5)
     scrollingList.BackgroundTransparency = 1
     scrollingList.BorderSizePixel = 0
     scrollingList.ScrollBarThickness = 4
@@ -340,35 +299,47 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     scrollingList.ZIndex = 1000
     scrollingList.Parent = dropDown
 
+    -- SUA LÓGICA DE LISTA (UIListLayout + TextButtons)
     local function updateList()
         for _, child in ipairs(scrollingList:GetChildren()) do
-            if child:IsA("TextButton") or child:IsA("TextLabel") then
-                child:Destroy()
-            end
+            child:Destroy()
         end
 
-        local y = 0
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 4)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = scrollingList
+
+        local temJogadores = false
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player then
+            if p.Name ~= player.Name then
+                temJogadores = true
                 local btn = Instance.new("TextButton")
-                btn.Size = UDim2.new(1, 0, 0, 30)
-                btn.Position = UDim2.new(0, 0, 0, y)
-                btn.BackgroundTransparency = 1
+                btn.Size = UDim2.new(1, -10, 0, 25)
+                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
                 btn.Text = p.Name
                 btn.TextColor3 = corBranca
                 btn.TextSize = 14
-                btn.Font = Enum.Font.GothamBold
-                btn.ZIndex = 1001
+                btn.Font = Enum.Font.Gotham
                 btn.Parent = scrollingList
 
                 btn.MouseButton1Click:Connect(function()
                     visor.Text = p.Name
                     dropDown.Visible = false
                 end)
-                y = y + 32
             end
         end
-        scrollingList.CanvasSize = UDim2.new(0, 0, 0, y)
+
+        if not temJogadores then
+            local txt = Instance.new("TextLabel")
+            txt.Size = UDim2.new(1, 0, 0, 50)
+            txt.BackgroundTransparency = 1
+            txt.Text = "Nenhum jogador online"
+            txt.TextColor3 = Color3.fromRGB(200, 200, 200)
+            txt.TextSize = 13
+            txt.Parent = scrollingList
+        end
     end
 
     local function updateDropdownPosition()
@@ -386,9 +357,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     end)
 
     local function refreshOnChange()
-        if dropDown.Visible then
-            updateList()
-        end
+        if dropDown.Visible then updateList() end
     end
     Players.PlayerAdded:Connect(refreshOnChange)
     Players.PlayerRemoving:Connect(refreshOnChange)
@@ -397,7 +366,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
 end
 
 -- ==========================================
--- SELETOR DE MÉTODO (MESMA CORREÇÃO DO DROPDOWNLAYER)
+-- SELETOR DE MÉTODO (MANTIDO)
 -- ==========================================
 
 local function createMethodSelector(parent, yPos, dropdownParent)
@@ -479,7 +448,6 @@ local function createMethodSelector(parent, yPos, dropdownParent)
         btn.Font = Enum.Font.GothamBold
         btn.ZIndex = 1001
         btn.Parent = list
-
         btn.MouseButton1Click:Connect(function()
             visor.Text = m
             dropDown.Visible = false
@@ -620,10 +588,6 @@ contentArea.Parent = mainFrame
 local tabs = {"ℹ️ Inf", "🔥 Principal", "👤 Avatar", "🌍 Mundo", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚡ Jogador", "⚙️ Config"}
 local tabButtons = {}
 local selectedTab = "ℹ️ Inf"
-
--- ==========================================
--- LÓGICA DE ATUALIZAÇÃO DE CONTEÚDO DAS ABAS
--- ==========================================
 
 local function updateContent(tabName)
     for _, child in pairs(contentArea:GetChildren()) do
@@ -884,10 +848,6 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
     end
 end
-
--- ==========================================
--- LÓGICA DAS ABAS E VERIFICAÇÃO
--- ==========================================
 
 local function selectTab(tabName)
     for _, btn in pairs(tabButtons) do

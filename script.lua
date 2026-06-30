@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -13,6 +14,8 @@ local corCinza = Color3.fromRGB(60, 60, 60)
 
 local mainFrame = nil
 local dropdownLayer = nil
+local audioStorage = {}
+local soundObj = nil
 
 local function makeDraggable(frame, dragHandle)
     local dragging = false
@@ -227,10 +230,6 @@ local function createActionButton(parent, text, size, position, callback)
     return frame
 end
 
--- ==========================================
--- SELETOR DE JOGADOR (COM A LÓGICA DO SEU SCRIPT DE TESTE)
--- ==========================================
-
 local function createPlayerSelector(parent, yPos, dropdownParent)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 55)
@@ -299,7 +298,6 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     scrollingList.ZIndex = 1000
     scrollingList.Parent = dropDown
 
-    -- SUA LÓGICA DE LISTA (UIListLayout + TextButtons)
     local function updateList()
         for _, child in ipairs(scrollingList:GetChildren()) do
             child:Destroy()
@@ -311,10 +309,8 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.Parent = scrollingList
 
-        local temJogadores = false
         for _, p in ipairs(Players:GetPlayers()) do
             if p.Name ~= player.Name then
-                temJogadores = true
                 local btn = Instance.new("TextButton")
                 btn.Size = UDim2.new(1, -10, 0, 25)
                 btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
@@ -329,16 +325,6 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
                     dropDown.Visible = false
                 end)
             end
-        end
-
-        if not temJogadores then
-            local txt = Instance.new("TextLabel")
-            txt.Size = UDim2.new(1, 0, 0, 50)
-            txt.BackgroundTransparency = 1
-            txt.Text = "Nenhum jogador online"
-            txt.TextColor3 = Color3.fromRGB(200, 200, 200)
-            txt.TextSize = 13
-            txt.Parent = scrollingList
         end
     end
 
@@ -364,10 +350,6 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
 
     return container
 end
-
--- ==========================================
--- SELETOR DE MÉTODO (MANTIDO)
--- ==========================================
 
 local function createMethodSelector(parent, yPos, dropdownParent)
     local container = Instance.new("Frame")
@@ -470,10 +452,6 @@ local function createMethodSelector(parent, yPos, dropdownParent)
 
     return container
 end
-
--- ==========================================
--- CRIAÇÃO DA INTERFACE E TELA DE LOGIN
--- ==========================================
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FireHubUI"
@@ -585,7 +563,7 @@ contentArea.CanvasSize = UDim2.new(0, 0, 0, 500)
 contentArea.ZIndex = 3
 contentArea.Parent = mainFrame
 
-local tabs = {"ℹ️ Inf", "🔥 Principal", "👤 Avatar", "🌍 Mundo", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚡ Jogador", "⚙️ Config"}
+local tabs = {"ℹ️ Inf", "🔥 Principal", "👤 Avatar", "🔊 Áudio", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚡ Jogador", "⚙️ Config"}
 local tabButtons = {}
 local selectedTab = "ℹ️ Inf"
 
@@ -713,27 +691,76 @@ local function updateContent(tabName)
         
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
 
-    elseif tabName == "⚡ Jogador" then
-        local function updatePlayerStats(stat, value)
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                local hum = player.Character:FindFirstChild("Humanoid")
-                if stat == "Velocidade" then
-                    hum.WalkSpeed = value
-                elseif stat == "Pulo" then
-                    hum.JumpPower = value
-                elseif stat == "Gravidade" then
-                    hum.UseJumpPower = false
-                    hum.Gravity = value
-                end
+    elseif tabName == "🔊 Áudio" then
+        local audioBox = createTextBox(contentArea, "Insira o ID...", UDim2.new(1, -20, 0, 30), UDim2.new(0, 10, 0, 10), corPreta, corBranca, Enum.Font.Gotham, 14)
+        
+        local arquivoContainer = createRoundedFrame(contentArea, UDim2.new(1, -20, 0, 120), UDim2.new(0, 10, 0, 50), corPreta, 0.1, 8)
+        local listFrame = Instance.new("ScrollingFrame")
+        listFrame.Size = UDim2.new(1, -10, 1, -10)
+        listFrame.Position = UDim2.new(0, 5, 0, 5)
+        listFrame.BackgroundTransparency = 1
+        listFrame.BorderSizePixel = 0
+        listFrame.ScrollBarThickness = 4
+        listFrame.ScrollBarImageColor3 = corNeon
+        listFrame.Parent = arquivoContainer
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 2)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = listFrame
+        
+        local function updateAudioList()
+            for _, child in ipairs(listFrame:GetChildren()) do
+                if child:IsA("TextLabel") then child:Destroy() end
+            end
+            for _, id in ipairs(audioStorage) do
+                local lbl = Instance.new("TextLabel")
+                lbl.Size = UDim2.new(1, -10, 0, 20)
+                lbl.BackgroundTransparency = 1
+                lbl.Text = id
+                lbl.TextColor3 = corBranca
+                lbl.TextSize = 13
+                lbl.Parent = listFrame
             end
         end
 
-        local function createSlider(parent, text, yPos, defaultVal, minVal, maxVal, statName)
+        createActionButton(contentArea, "Save", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 185), function()
+            local id = audioBox.Text
+            if id and id ~= "" then
+                table.insert(audioStorage, id)
+                updateAudioList()
+                audioBox.Text = ""
+            end
+        end)
+
+        createToggle(contentArea, "Tocar", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 220), function(ativado)
+            if ativado then
+                local id = audioBox.Text
+                if id and id ~= "" then
+                    if soundObj then soundObj:Destroy() end
+                    soundObj = Instance.new("Sound")
+                    soundObj.SoundId = "rbxassetid://" .. id
+                    soundObj.Looped = true
+                    soundObj.Parent = SoundService
+                    soundObj:Play()
+                end
+            else
+                if soundObj then
+                    soundObj:Stop()
+                    soundObj:Destroy()
+                    soundObj = nil
+                end
+            end
+        end)
+        
+        updateAudioList()
+        contentArea.CanvasSize = UDim2.new(0, 0, 0, 260)
+
+    elseif tabName == "⚡ Jogador" then
+        local function createNumberInput(parent, text, yPos, defaultVal, statName)
             local frame = Instance.new("Frame")
             frame.Size = UDim2.new(1, -20, 0, 40)
             frame.Position = UDim2.new(0, 10, 0, yPos)
             frame.BackgroundTransparency = 1
-            frame.ZIndex = 3
             frame.Parent = parent
 
             local label = Instance.new("TextLabel")
@@ -745,100 +772,53 @@ local function updateContent(tabName)
             label.TextSize = 14
             label.Font = Enum.Font.Gotham
             label.TextXAlignment = Enum.TextXAlignment.Left
-            label.ZIndex = 3
             label.Parent = frame
 
-            local valueDisplay = Instance.new("TextLabel")
-            valueDisplay.Size = UDim2.new(0, 50, 0, 20)
-            valueDisplay.Position = UDim2.new(1, -60, 0, 0)
-            valueDisplay.BackgroundTransparency = 1
-            valueDisplay.Text = tostring(defaultVal)
-            valueDisplay.TextColor3 = corNeon
-            valueDisplay.TextSize = 14
-            valueDisplay.Font = Enum.Font.GothamBold
-            valueDisplay.ZIndex = 3
-            valueDisplay.Parent = frame
+            local inputBox = Instance.new("TextBox")
+            inputBox.Size = UDim2.new(0, 120, 0, 30)
+            inputBox.Position = UDim2.new(1, -120, 0.5, -15)
+            inputBox.BackgroundColor3 = corPreta
+            inputBox.BackgroundTransparency = 0.2
+            inputBox.Text = tostring(defaultVal)
+            inputBox.TextColor3 = corBranca
+            inputBox.TextSize = 14
+            inputBox.Font = Enum.Font.GothamBold
+            inputBox.TextXAlignment = Enum.TextXAlignment.Center
+            inputBox.Parent = frame
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 6)
+            corner.Parent = inputBox
+            
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = corNeon
+            stroke.Thickness = 1
+            stroke.Parent = inputBox
 
-            local sliderFrame = Instance.new("Frame")
-            sliderFrame.Size = UDim2.new(0, 120, 0, 8)
-            sliderFrame.Position = UDim2.new(1, -190, 0.5, -4)
-            sliderFrame.BackgroundColor3 = corCinza
-            sliderFrame.BorderSizePixel = 0
-            sliderFrame.Active = true 
-            sliderFrame.ZIndex = 3
-            sliderFrame.Parent = frame
-
-            local sliderCorner = Instance.new("UICorner")
-            sliderCorner.CornerRadius = UDim.new(1, 0)
-            sliderCorner.Parent = sliderFrame
-
-            local fillBar = Instance.new("Frame")
-            fillBar.Size = UDim2.new((defaultVal - minVal) / (maxVal - minVal), 0, 1, 0)
-            fillBar.BackgroundColor3 = corNeon
-            fillBar.BorderSizePixel = 0
-            fillBar.ZIndex = 4
-            fillBar.Parent = sliderFrame
-
-            local fillCorner = Instance.new("UICorner")
-            fillCorner.CornerRadius = UDim.new(1, 0)
-            fillCorner.Parent = fillBar
-
-            local sliderBtn = Instance.new("TextButton")
-            sliderBtn.Size = UDim2.new(0, 20, 0, 20)
-            sliderBtn.Position = UDim2.new((defaultVal - minVal) / (maxVal - minVal), -10, 0.5, -10)
-            sliderBtn.BackgroundColor3 = corBranca
-            sliderBtn.Text = ""
-            sliderBtn.AutoButtonColor = false
-            sliderBtn.BorderSizePixel = 0
-            sliderBtn.ZIndex = 5
-            sliderBtn.Parent = sliderFrame
-
-            local sliderCornerBtn = Instance.new("UICorner")
-            sliderCornerBtn.CornerRadius = UDim.new(1, 0)
-            sliderCornerBtn.Parent = sliderBtn
-
-            local dragging = false
-            local currentVal = defaultVal
-
-            local char = player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                updatePlayerStats(statName, defaultVal)
+            local function updateStat()
+                local val = tonumber(inputBox.Text)
+                if val then
+                    if player.Character and player.Character:FindFirstChild("Humanoid") then
+                        local hum = player.Character:FindFirstChild("Humanoid")
+                        if statName == "Velocidade" then
+                            hum.WalkSpeed = val
+                        elseif statName == "Pulo" then
+                            hum.JumpPower = val
+                        elseif statName == "Gravidade" then
+                            hum.UseJumpPower = false
+                            hum.Gravity = val
+                        end
+                    end
+                end
             end
 
-            sliderBtn.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    dragging = true
-                end
-            end)
-
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    dragging = false
-                end
-            end)
-
-            UserInputService.InputChanged:Connect(function(input)
-                if not dragging then return end
-                if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-
-                local pos = input.Position.X
-                local startX = sliderFrame.AbsolutePosition.X
-                local sizeX = sliderFrame.AbsoluteSize.X
-
-                local percent = math.clamp((pos - startX) / sizeX, 0, 1)
-                currentVal = math.floor(minVal + percent * (maxVal - minVal))
-
-                fillBar.Size = UDim2.new(percent, 0, 1, 0)
-                sliderBtn.Position = UDim2.new(percent, -10, 0.5, -10)
-                valueDisplay.Text = tostring(currentVal)
-
-                updatePlayerStats(statName, currentVal)
-            end)
+            inputBox.FocusLost:Connect(updateStat)
+            updateStat()
         end
 
-        createSlider(contentArea, "Velocidade", 10, 16, 0, 100, "Velocidade")
-        createSlider(contentArea, "Pulo", 60, 50, 0, 300, "Pulo")
-        createSlider(contentArea, "Gravidade", 110, 196, 0, 500, "Gravidade")
+        createNumberInput(contentArea, "Velocidade", 10, 16, "Velocidade")
+        createNumberInput(contentArea, "Pulo", 60, 50, "Pulo")
+        createNumberInput(contentArea, "Gravidade", 110, 196, "Gravidade")
 
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 180)
 

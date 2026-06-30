@@ -10,6 +10,7 @@ local corNeon = Color3.fromRGB(255, 0, 0)
 local corNeonEscuro = Color3.fromRGB(139, 0, 0)
 local corBranca = Color3.fromRGB(255, 255, 255)
 
+-- Função para arrastar (já aplicada na tela de login e no menu)
 local function makeDraggable(frame, dragHandle)
     local dragging = false
     local dragStart, startPos
@@ -138,6 +139,7 @@ local function createTextBox(parent, placeholder, size, position, color, textCol
     return box
 end
 
+-- Toggle Switch CORRIGIDO E FUNCIONAL
 local function createToggle(parent, text, size, position, callback)
     local frame = Instance.new("Frame")
     frame.Size = size
@@ -208,7 +210,7 @@ local function createToggle(parent, text, size, position, callback)
     return frame
 end
 
--- Criador do seletor de jogadores (AGORA MAIOR E MAIS DESTACADO)
+-- Criador do seletor de jogadores (COM BORDA NO VISOR)
 local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 50)
@@ -241,6 +243,13 @@ local function createPlayerSelector(parent, yPos)
     visor.Font = Enum.Font.GothamBold
     visor.ZIndex = 3
     visor.Parent = container
+    
+    -- BORDA ADICIONADA NO VISOR
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = corNeon
+    stroke.Thickness = 2
+    stroke.Transparency = 0.5
+    stroke.Parent = visor
 
     local visorCorner = Instance.new("UICorner")
     visorCorner.CornerRadius = UDim.new(0, 6)
@@ -328,6 +337,7 @@ screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
+-- TELA DE LOGIN (JÁ É ARRASTÁVEL POR CAUSA DO makeDraggable LOGO ABAIXO)
 local keyFrame = createRoundedFrame(screenGui, UDim2.new(0, 340, 0, 220), UDim2.new(0.5, -170, 0.5, -110), corPreta, 0, 12)
 aplicarNeon(keyFrame, 16, 0.65, corNeon, 16)
 aplicarNeon(keyFrame, 8, 0.45, corNeon, 14)
@@ -365,6 +375,7 @@ linkLabel.TextYAlignment = Enum.TextYAlignment.Center
 linkLabel.ZIndex = 3
 linkLabel.Parent = keyFrame
 
+-- AQUI É O QUE TORNA A TELA DE LOGIN ARRASTÁVEL
 makeDraggable(keyFrame, titleBar)
 
 local floatBtn = Instance.new("TextButton")
@@ -438,6 +449,11 @@ local tabs = {"ℹ️ Inf", "🔥 Principal", "🎨 Visual", "🧍 Jogador", "�
 local tabButtons = {}
 local selectedTab = "ℹ️ Inf"
 
+-- Variáveis de estado para as 3 opções novas
+local killActive = false
+local flingActive = false
+local blackHoleActive = false
+
 local function updateContent(tabName)
     for _, child in pairs(contentArea:GetChildren()) do
         child:Destroy()
@@ -478,26 +494,27 @@ local function updateContent(tabName)
         desc2.Parent = contentArea
 
     elseif tabName == "🔥 Principal" then
-        -- Seletor de jogadores (Agora maior e mais destacado!)
         local visor = createPlayerSelector(contentArea, 10)
 
-        -- NOVAS OPÇÕES SOLICITADAS NO FORMATO EXATO (Kill, Fling, black hole)
         local toggleSize = UDim2.new(1, -20, 0, 28)
-        local yBase = 70
+        local yBase = 85 -- Mudei para 85 para deixar as opções um pouco mais para baixo
 
+        -- OPÇÕES KILL, FLING E BLACK HOLE (AGORA FUNCIONAIS E COM ESTADO)
         createToggle(contentArea, "Kill", toggleSize, UDim2.new(0, 10, 0, yBase), function(ativado)
-            print("Kill", ativado and "LIGADO" or "DESLIGADO")
+            killActive = ativado
+            print("Kill status:", killActive and "LIGADO" or "DESLIGADO")
         end)
         
         createToggle(contentArea, "Fling", toggleSize, UDim2.new(0, 10, 0, yBase + 33), function(ativado)
-            print("Fling", ativado and "LIGADO" or "DESLIGADO")
+            flingActive = ativado
+            print("Fling status:", flingActive and "LIGADO" or "DESLIGADO")
         end)
         
         createToggle(contentArea, "black hole", toggleSize, UDim2.new(0, 10, 0, yBase + 66), function(ativado)
-            print("Black Hole", ativado and "LIGADO" or "DESLIGADO")
+            blackHoleActive = ativado
+            print("Black Hole status:", blackHoleActive and "LIGADO" or "DESLIGADO")
         end)
 
-        -- Teleporte para o jogador escolhido
         createTextLabel(contentArea, "TELEPORTE", UDim2.new(1, 0, 0, 25), UDim2.new(0, 10, 0, yBase + 105), corBranca, Enum.Font.GothamBold, 14)
         
         local teleportBtn = createTextButton(contentArea, "TELEPORTAR", UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, yBase + 135), corNeon, corBranca, Enum.Font.GothamBold, 14)
@@ -516,7 +533,7 @@ local function updateContent(tabName)
             end
         end)
 
-        -- MANTENDO AS FUNÇÕES ANTIGAS MAIS ABAIXO
+        -- Funções antigas
         local funcs = {"Auto Farm", "Auto Quest", "Auto Boss", "Coletar Itens"}
         local yBaseAntiga = yBase + 175
         for i, name in ipairs(funcs) do

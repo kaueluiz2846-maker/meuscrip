@@ -12,9 +12,10 @@ local corBranca = Color3.fromRGB(255, 255, 255)
 local corCinza = Color3.fromRGB(60, 60, 60)
 
 -- ==========================================
--- VARIÁVEIS PRINCIPAIS (declaradas cedo para poder usar nas funções)
+-- VARIÁVEIS PRINCIPAIS
 -- ==========================================
-local mainFrame = nil  -- será atribuído depois
+local mainFrame = nil
+local dropdownLayer = nil
 
 -- ==========================================
 -- FUNÇÕES BÁSICAS DE CRIAÇÃO DE UI
@@ -268,7 +269,7 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADOR (AGORA COM DROPDOWN NO MAINFRAME)
+-- SELETOR DE JOGADOR (USANDO DROPDOWNLAYER CORRIGIDO)
 -- ==========================================
 
 local function createPlayerSelector(parent, yPos, dropdownParent)
@@ -315,14 +316,13 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
-    -- Dropdown agora é filho do dropdownParent (mainFrame), não do container
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 200)
     dropDown.BackgroundColor3 = corPreta
     dropDown.BackgroundTransparency = 0.1
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
-    dropDown.ZIndex = 100  -- bem alto para sobrepor tudo
+    dropDown.ZIndex = 999
     dropDown.Parent = dropdownParent
 
     local dropCorner = Instance.new("UICorner")
@@ -337,7 +337,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     scrollingList.BorderSizePixel = 0
     scrollingList.ScrollBarThickness = 4
     scrollingList.ScrollBarImageColor3 = corNeon
-    scrollingList.ZIndex = 101
+    scrollingList.ZIndex = 1000
     scrollingList.Parent = dropDown
 
     local function updateList()
@@ -358,7 +358,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
                 btn.TextColor3 = corBranca
                 btn.TextSize = 14
                 btn.Font = Enum.Font.GothamBold
-                btn.ZIndex = 102
+                btn.ZIndex = 1001
                 btn.Parent = scrollingList
 
                 btn.MouseButton1Click:Connect(function()
@@ -371,14 +371,12 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
         scrollingList.CanvasSize = UDim2.new(0, 0, 0, y)
     end
 
-    -- Posiciona o dropdown exatamente abaixo do visor (em coordenadas de tela)
     local function updateDropdownPosition()
         local absPos = visor.AbsolutePosition
         local absSize = visor.AbsoluteSize
         dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
     end
 
-    -- Atualiza posição sempre que o dropdown for exibido
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
         if dropDown.Visible then
@@ -387,7 +385,6 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
         end
     end)
 
-    -- Atualiza lista quando jogadores entram/saem (mesmo se dropdown não estiver visível)
     local function refreshOnChange()
         if dropDown.Visible then
             updateList()
@@ -400,7 +397,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
 end
 
 -- ==========================================
--- SELETOR DE MÉTODO (MESMA CORREÇÃO)
+-- SELETOR DE MÉTODO (MESMA CORREÇÃO DO DROPDOWNLAYER)
 -- ==========================================
 
 local function createMethodSelector(parent, yPos, dropdownParent)
@@ -447,14 +444,13 @@ local function createMethodSelector(parent, yPos, dropdownParent)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
-    -- Dropdown filho do dropdownParent
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 110)
     dropDown.BackgroundColor3 = corPreta
     dropDown.BackgroundTransparency = 0.1
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
-    dropDown.ZIndex = 100
+    dropDown.ZIndex = 999
     dropDown.Parent = dropdownParent
 
     local dropCorner = Instance.new("UICorner")
@@ -467,7 +463,7 @@ local function createMethodSelector(parent, yPos, dropdownParent)
     list.Position = UDim2.new(0, 2, 0, 2)
     list.BackgroundTransparency = 1
     list.BorderSizePixel = 0
-    list.ZIndex = 101
+    list.ZIndex = 1000
     list.Parent = dropDown
 
     local y = 0
@@ -481,7 +477,7 @@ local function createMethodSelector(parent, yPos, dropdownParent)
         btn.TextColor3 = corBranca
         btn.TextSize = 14
         btn.Font = Enum.Font.GothamBold
-        btn.ZIndex = 102
+        btn.ZIndex = 1001
         btn.Parent = list
 
         btn.MouseButton1Click:Connect(function()
@@ -515,8 +511,16 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FireHubUI"
 screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
-screenGui.DisplayOrder = 999
+screenGui.DisplayOrder = 9999
 screenGui.Parent = playerGui
+
+dropdownLayer = Instance.new("Frame")
+dropdownLayer.Name = "DropdownLayer"
+dropdownLayer.Size = UDim2.new(1, 0, 1, 0)
+dropdownLayer.Position = UDim2.new(0, 0, 0, 0)
+dropdownLayer.BackgroundTransparency = 1
+dropdownLayer.ZIndex = 999
+dropdownLayer.Parent = screenGui
 
 local keyFrame = createRoundedFrame(screenGui, UDim2.new(0, 340, 0, 220), UDim2.new(0.5, -170, 0.5, -110), corPreta, 0, 12)
 keyFrame.ZIndex = 999
@@ -558,7 +562,6 @@ floatBtn.Visible = false
 
 makeDraggable(floatBtn, floatBtn)
 
--- ATRIBUIÇÃO DO mainFrame (agora a variável existe)
 mainFrame = createRoundedFrame(screenGui, UDim2.new(0, 580, 0, 420), UDim2.new(0.5, -290, 0.5, -210), corPreta, 0, 12)
 mainFrame.Visible = false
 aplicarNeon(mainFrame, 16, 0.65, corNeon, 16)
@@ -664,17 +667,13 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
 
     elseif tabName == "🔥 Principal" then
-        -- Passamos mainFrame como dropdownParent para os seletores
-        createPlayerSelector(contentArea, 10, mainFrame)
-        createMethodSelector(contentArea, 68, mainFrame)
+        createPlayerSelector(contentArea, 10, dropdownLayer)
+        createMethodSelector(contentArea, 68, dropdownLayer)
 
         local toggleSize = UDim2.new(1, -20, 0, 28)
         local yBase = 140 
 
-        -- KILL
         createActionButton(contentArea, "Kill", toggleSize, UDim2.new(0, 10, 0, yBase), function()
-            -- Como o playerSelector não é retornado, precisamos acessar o visor. Vamos simplificar e pegar o texto do visor.
-            -- Podemos encontrar o container de jogador e seu visor.
             local containers = contentArea:GetChildren()
             local targetName = "Selecionar..."
             for _, c in ipairs(containers) do
@@ -693,22 +692,18 @@ local function updateContent(tabName)
             end
         end)
 
-        -- FLING
         createToggle(contentArea, "Fling", toggleSize, UDim2.new(0, 10, 0, yBase + 35), function(ativado)
             print("Fling Ativado:", ativado)
         end)
 
-        -- BLACK HOLE
         createToggle(contentArea, "black hole", toggleSize, UDim2.new(0, 10, 0, yBase + 70), function(ativado)
             print("Black Hole Ativado:", ativado)
         end)
 
-        -- VIEW
         createToggle(contentArea, "View", toggleSize, UDim2.new(0, 10, 0, yBase + 105), function(ativado)
             print("View Ativado:", ativado)
         end)
 
-        -- TELEPORT
         createActionButton(contentArea, "Teleport", toggleSize, UDim2.new(0, 10, 0, yBase + 140), function()
             local containers = contentArea:GetChildren()
             local targetName = "Selecionar..."
@@ -734,7 +729,7 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, yBase + 180)
 
     elseif tabName == "👤 Avatar" then
-        createPlayerSelector(contentArea, 10, mainFrame)
+        createPlayerSelector(contentArea, 10, dropdownLayer)
         
         createActionButton(contentArea, "Copy avatar", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 75), function()
             local containers = contentArea:GetChildren()

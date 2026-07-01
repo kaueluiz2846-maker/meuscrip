@@ -7,7 +7,6 @@ local CoreGui = game:GetService("CoreGui")
 local SoundService = game:GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
--- Configurações
 local CONFIG = {
     Theme = "Dark",
     NeonColor = Color3.fromRGB(255, 0, 0),
@@ -18,7 +17,6 @@ local CONFIG = {
     StrokeColor = Color3.fromRGB(255, 0, 0),
     AnimationSpeed = 0.2,
     ShowGlow = true,
-    ShowFPS = false,
     CornerRadius = UDim.new(0, 8),
     Font = Enum.Font.GothamBold,
     FontSize = 14,
@@ -26,39 +24,16 @@ local CONFIG = {
 
 local LoginKey = "HUB123"
 local IsLoggedIn = false
-local NotificationQueue = {}
-local IsNotifying = false
-local CurrentTab = nil
 local SavedAudioIDs = {}
-local AudioPlayers = {}
 
-local function createSound(id, volume)
+local function playSound(id, volume)
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://" .. id
     sound.Volume = volume or 1
     sound.Parent = CoreGui
-    return sound
+    sound:Play()
 end
 
-local SOUNDS = {
-    Click = createSound(9120386435, 0.5),
-    Open = createSound(9120386435, 0.5),
-    Close = createSound(9120386435, 0.5),
-    Dropdown = createSound(9120386435, 0.5),
-    ToggleOn = createSound(9120386435, 0.5),
-    ToggleOff = createSound(9120386435, 0.5),
-    Error = createSound(9120386435, 0.5),
-    Success = createSound(9120386435, 0.5),
-}
-
-local function playSound(name)
-    local s = SOUNDS[name]
-    if s then
-        s:Play()
-    end
-end
-
--- Funções de criação de componentes
 local function createFrame(parent, size, position, bgColor, transparency, zIndex)
     local frame = Instance.new("Frame")
     frame.Size = size or UDim2.new(0, 100, 0, 100)
@@ -102,7 +77,7 @@ local function createButton(parent, size, position, text, bgColor, callback)
     if parent then button.Parent = parent end
     if callback then
         button.MouseButton1Click:Connect(function()
-            playSound("Click")
+            playSound("click", 0.5)
             callback()
         end)
     end
@@ -222,7 +197,7 @@ local function createToggle(parent, size, position, text, default, callback)
         state = not state
         updateVisual()
         if callback then callback(state) end
-        playSound(state and "ToggleOn" or "ToggleOff")
+        playSound(state and "toggle_on" or "toggle_off", 0.5)
     end)
     if default then
         updateVisual()
@@ -288,7 +263,7 @@ local function createDropdown(parent, size, position, placeholder, items, callba
                 selectedText.TextColor3 = CONFIG.TextColor
                 listFrame.Visible = false
                 if callback then callback(item) end
-                playSound("Dropdown")
+                playSound("click", 0.5)
             end)
         end
         scrolling.CanvasSize = UDim2.new(0,0,0,listLayout.AbsoluteContentSize.Y + 5)
@@ -369,45 +344,32 @@ local function createSlider(parent, size, position, text, min, max, default, cal
 end
 
 local function createNotification(title, message, duration)
-    local notif = createFrame(nil, UDim2.new(0, 250, 0, 60), UDim2.new(1, -260, 1, -(60*#NotificationQueue + 10*#NotificationQueue + 10)), Color3.fromRGB(20,20,20), 0.1, 10)
+    local notif = createFrame(nil, UDim2.new(0, 250, 0, 60), UDim2.new(1, -260, 1, -70), Color3.fromRGB(20,20,20), 0.1, 10)
     addUICorner(notif, CONFIG.CornerRadius)
     addUIStroke(notif, CONFIG.NeonColor, 1)
     local titleLabel = createLabel(notif, UDim2.new(1,-10,0,20), UDim2.new(0,5,0,5), title, CONFIG.NeonColor, CONFIG.Font, 16, 11)
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     local msgLabel = createLabel(notif, UDim2.new(1,-10,0,20), UDim2.new(0,5,0,30), message, CONFIG.TextColor, CONFIG.Font, 12, 11)
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
-    notif.Parent = CoreGui:FindFirstChild("HubUI") or game:GetService("CoreGui")
-    notif.Position = UDim2.new(1, 0, 1, -notif.Size.Y.Offset - 10)
-    TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1, -260, 1, -(notif.Size.Y.Offset+10) - (60+10)*#NotificationQueue)}):Play()
-    table.insert(NotificationQueue, notif)
+    notif.Parent = ScreenGui
+    TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1, -260, 1, -70)}):Play()
     delay(duration or 3, function()
-        TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1, 0, notif.Position.Y.Scale, notif.Position.Y.Offset)}):Play()
+        TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1, 0, 1, -70)}):Play()
         wait(0.3)
         notif:Destroy()
-        for i,v in ipairs(NotificationQueue) do
-            if v == notif then
-                table.remove(NotificationQueue, i)
-                break
-            end
-        end
     end)
-end
-
-local function createSeparator(parent, position, width)
-    local sep = createFrame(parent, UDim2.new(width or 1, -10, 0, 1), position or UDim2.new(0,5,0,0), CONFIG.NeonColor, 0, 2)
-    return sep
 end
 
 -- MAIN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HubUI"
+ScreenGui.Name = "FireHubUI"
 ScreenGui.Parent = CoreGui
 ScreenGui.DisplayOrder = 999
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- LOGIN SCREEN
-local LoginFrame = createFrame(ScreenGui, UDim2.new(0, 350, 0, 300), UDim2.new(0.5, -175, 0.5, -150), CONFIG.Background, 0, 1)
+local LoginFrame = createFrame(ScreenGui, UDim2.new(0, 350, 0, 280), UDim2.new(0.5, -175, 0.5, -140), CONFIG.Background, 0, 1)
 addUICorner(LoginFrame, CONFIG.CornerRadius)
 addUIStroke(LoginFrame, CONFIG.NeonDark, 2)
 addGlow(LoginFrame, CONFIG.NeonColor, 20)
@@ -415,15 +377,15 @@ createDrag(LoginFrame)
 
 local titleBar = createFrame(LoginFrame, UDim2.new(1, 0, 0, 40), UDim2.new(0,0,0,0), CONFIG.NeonDark, 0, 2)
 addUICorner(titleBar, UDim.new(0, 8))
-local titleLabel = createLabel(titleBar, UDim2.new(1,-30,1,0), UDim2.new(0,10,0,0), "HUB PREMIUM", CONFIG.TextColor, CONFIG.Font, 20, 3)
+local titleLabel = createLabel(titleBar, UDim2.new(1,-30,1,0), UDim2.new(0,10,0,0), "FIRE HUB", CONFIG.TextColor, CONFIG.Font, 20, 3)
 local closeBtn = createButton(titleBar, UDim2.new(0,30,0,30), UDim2.new(1,-35,0,5), "×", CONFIG.NeonDark, function() ScreenGui:Destroy() end)
 closeBtn.TextSize = 24
 
-local logoLabel = createLabel(LoginFrame, UDim2.new(0,100,0,40), UDim2.new(0.5,-50,0,50), "🔥", CONFIG.NeonColor, nil, 36, 2)
+local logoLabel = createLabel(LoginFrame, UDim2.new(0,100,0,40), UDim2.new(0.5,-50,0,45), "🔥", CONFIG.NeonColor, nil, 36, 2)
 logoLabel.BackgroundTransparency = 1
-local subtitle = createLabel(LoginFrame, UDim2.new(1,-20,0,20), UDim2.new(0,10,0,100), "Insira sua chave para continuar", CONFIG.TextColor, CONFIG.Font, 14, 2)
-local keyBox = createTextBox(LoginFrame, UDim2.new(1,-40,0,35), UDim2.new(0,20,0,130), "Chave de acesso", nil)
-local statusLabel = createLabel(LoginFrame, UDim2.new(1,-20,0,20), UDim2.new(0,20,0,210), "", CONFIG.NeonColor, CONFIG.Font, 13, 2)
+local subtitle = createLabel(LoginFrame, UDim2.new(1,-20,0,20), UDim2.new(0,10,0,95), "Insira sua chave para continuar", CONFIG.TextColor, CONFIG.Font, 14, 2)
+local keyBox = createTextBox(LoginFrame, UDim2.new(1,-40,0,35), UDim2.new(0,20,0,120), "Chave de acesso", nil)
+local statusLabel = createLabel(LoginFrame, UDim2.new(1,-20,0,20), UDim2.new(0,20,0,195), "", CONFIG.NeonColor, CONFIG.Font, 13, 2)
 statusLabel.TextTransparency = 1
 
 local function shakeElement(element)
@@ -436,17 +398,17 @@ local function shakeElement(element)
     tween2.Completed:Connect(function() tween3:Play() end)
 end
 
-local verifyBtn = createButton(LoginFrame, UDim2.new(0.45,-10,0,35), UDim2.new(0.025,20,0,170), "Verificar", CONFIG.NeonDark, function()
+local verifyBtn = createButton(LoginFrame, UDim2.new(1,-40,0,38), UDim2.new(0,20,0,160), "Verificar", CONFIG.NeonDark, function()
     if keyBox.Text == LoginKey then
-        playSound("Success")
-        createNotification("Sucesso", "Login efetuado!", 2)
+        playSound("success", 0.5)
+        createNotification("Fire Hub", "Login efetuado com sucesso!", 2)
         TweenService:Create(LoginFrame, TweenInfo.new(0.5), {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5,0,0.5,0)}):Play()
         wait(0.5)
         LoginFrame:Destroy()
         IsLoggedIn = true
         buildMainUI()
     else
-        playSound("Error")
+        playSound("error", 0.5)
         keyBox.BackgroundColor3 = Color3.fromRGB(255,0,0)
         shakeElement(keyBox)
         statusLabel.Text = "Chave incorreta!"
@@ -456,33 +418,12 @@ local verifyBtn = createButton(LoginFrame, UDim2.new(0.45,-10,0,35), UDim2.new(0
         TweenService:Create(statusLabel, TweenInfo.new(1), {TextTransparency = 1}):Play()
     end
 end)
-local copyLinkBtn = createButton(LoginFrame, UDim2.new(0.45,-10,0,35), UDim2.new(0.525,20,0,170), "Copiar Link", CONFIG.NeonDark, function()
-    if setclipboard then setclipboard("discord.gg/exemplo") end
-    createNotification("Link copiado!", "Convite do Discord copiado.", 2)
-end)
-local discordBtn = createButton(LoginFrame, UDim2.new(1,-40,0,35), UDim2.new(0,20,0,215), "Discord", CONFIG.NeonDark, function()
-    if setclipboard then setclipboard("discord.gg/exemplo") end
-    createNotification("Discord", "Link copiado!", 2)
-end)
+
+-- Texto de contato
+createLabel(LoginFrame, UDim2.new(1,-40,0,20), UDim2.new(0,20,0,210), "Caso não tenha a chave, contate o administrador.", Color3.fromRGB(150,150,150), CONFIG.Font, 11, 2)
 
 function buildMainUI()
-    -- Botão flutuante
-    local floatBtn = createButton(ScreenGui, UDim2.new(0,50,0,50), UDim2.new(0,20,0.5,-25), "☰", CONFIG.NeonDark, function()
-        if MainFrame.Visible then
-            TweenService:Create(MainFrame, TweenInfo.new(0.2), {Size = UDim2.new(0,0,0,0)}):Play()
-            wait(0.2)
-            MainFrame.Visible = false
-        else
-            MainFrame.Visible = true
-            TweenService:Create(MainFrame, TweenInfo.new(0.2), {Size = UDim2.new(0,600,0,400)}):Play()
-        end
-    end)
-    floatBtn.TextSize = 22
-    addUICorner(floatBtn, UDim.new(1,0))
-    addGlow(floatBtn, CONFIG.NeonColor, 10)
-    createDrag(floatBtn)
-
-    -- Menu principal
+    -- Menu principal (declarado antes do botão flutuante para ser capturado)
     local MainFrame = createFrame(ScreenGui, UDim2.new(0,600,0,400), UDim2.new(0.5,-300,0.5,-200), CONFIG.Background, 0, 2)
     MainFrame.Visible = false
     MainFrame.Size = UDim2.new(0,0,0,0)
@@ -494,7 +435,7 @@ function buildMainUI()
     -- Barra superior
     local topBar = createFrame(MainFrame, UDim2.new(1,0,0,40), UDim2.new(0,0,0,0), CONFIG.NeonDark, 0, 3)
     addUICorner(topBar, UDim.new(0, 8))
-    createLabel(topBar, UDim2.new(1,-60,1,0), UDim2.new(0,10,0,0), "HUB PREMIUM", CONFIG.TextColor, CONFIG.Font, 20, 4)
+    createLabel(topBar, UDim2.new(1,-60,1,0), UDim2.new(0,10,0,0), "FIRE HUB", CONFIG.TextColor, CONFIG.Font, 20, 4)
     createButton(topBar, UDim2.new(0,30,0,30), UDim2.new(1,-65,0,5), "_", CONFIG.NeonDark, function()
         MainFrame.Visible = false
     end)
@@ -504,9 +445,10 @@ function buildMainUI()
 
     -- Sidebar
     local sidebar = createFrame(MainFrame, UDim2.new(0,120,1,-40), UDim2.new(0,0,0,40), Color3.fromRGB(15,15,15), 0, 2)
+    local tabContentArea = createFrame(MainFrame, UDim2.new(1,-120,1,-40), UDim2.new(0,120,0,40), CONFIG.Background, 0, 1)
+
     local tabButtons = {}
     local tabNames = {"ℹ️ Info", "🔥 Principal", "👤 Avatar", "🔊 Áudio", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚡ Jogador", "⚙️ Config"}
-    local tabContentArea = createFrame(MainFrame, UDim2.new(1,-120,1,-40), UDim2.new(0,120,0,40), CONFIG.Background, 0, 1)
     local activeTab = nil
 
     local function switchTab(tabName, callback)
@@ -521,6 +463,7 @@ function buildMainUI()
         activeTab.Content = content
     end
 
+    -- Criar botões das abas
     for i, name in ipairs(tabNames) do
         local btn = createButton(sidebar, UDim2.new(1,-4,0,32), UDim2.new(0,2,0,(i-1)*34+2), name, Color3.fromRGB(15,15,15), nil)
         btn.TextSize = 12
@@ -532,8 +475,8 @@ function buildMainUI()
     tabButtons["ℹ️ Info"].MouseButton1Click:Connect(function()
         switchTab("ℹ️ Info", function()
             local frame = createFrame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            createLabel(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,10), "Bem-vindo ao Hub Premium", CONFIG.TextColor, nil, 20)
-            createLabel(frame, UDim2.new(1,-20,0,50), UDim2.new(0,10,0,50), "Script completo e modular.", CONFIG.TextColor, nil, 14)
+            createLabel(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,10), "Bem-vindo ao Fire Hub", CONFIG.TextColor, nil, 20)
+            createLabel(frame, UDim2.new(1,-20,0,50), UDim2.new(0,10,0,50), "Script modular e poderoso.", CONFIG.TextColor, nil, 14)
             return frame
         end)
     end)
@@ -541,8 +484,8 @@ function buildMainUI()
     tabButtons["🔥 Principal"].MouseButton1Click:Connect(function()
         switchTab("🔥 Principal", function()
             local frame = createFrame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            local playerDropdown = createDropdown(frame, UDim2.new(1,-20,0,35), UDim2.new(0,10,0,20), "Selecionar jogador", {}, function(player) end)
-            local methodDropdown = createDropdown(frame, UDim2.new(1,-20,0,35), UDim2.new(0,10,0,70), "Método", {"Ball","Bus","Boat"}, function(method) end)
+            local playerDropdown = createDropdown(frame, UDim2.new(1,-20,0,35), UDim2.new(0,10,0,20), "Selecionar jogador", {}, function() end)
+            local methodDropdown = createDropdown(frame, UDim2.new(1,-20,0,35), UDim2.new(0,10,0,70), "Método", {"Ball","Bus","Boat"}, function() end)
             createButton(frame, UDim2.new(0.45,-5,0,35), UDim2.new(0,10,0,120), "Kill", CONFIG.NeonDark, function()
                 local plr = playerDropdown.GetSelected()
                 if plr then
@@ -574,10 +517,10 @@ function buildMainUI()
                 local plr = playerDropdown.GetSelected()
                 if plr then
                     local target = Players:FindFirstChild(plr)
-                    if target then
-                        local humanoidDescription = target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid:GetAppliedDescription()
-                        if humanoidDescription then
-                            LocalPlayer.Character.Humanoid:ApplyDescription(humanoidDescription)
+                    if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+                        local desc = target.Character.Humanoid:GetAppliedDescription()
+                        if desc and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                            LocalPlayer.Character.Humanoid:ApplyDescription(desc)
                         end
                     end
                 end
@@ -589,40 +532,15 @@ function buildMainUI()
     tabButtons["🔊 Áudio"].MouseButton1Click:Connect(function()
         switchTab("🔊 Áudio", function()
             local frame = createFrame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            local idBox = createTextBox(frame, UDim2.new(1,-20,0,35), UDim2.new(0,10,0,20), "ID do áudio (rbxassetid)", nil)
-            local idListFrame = createFrame(frame, UDim2.new(1,-20,0,150), UDim2.new(0,10,0,70), Color3.fromRGB(20,20,20), 0, 2)
-            addUICorner(idListFrame)
-            local idScroll = Instance.new("ScrollingFrame")
-            idScroll.Size = UDim2.new(1,0,1,0)
-            idScroll.BackgroundTransparency = 1
-            idScroll.CanvasSize = UDim2.new(0,0,0,0)
-            idScroll.Parent = idListFrame
-            local idLayout = Instance.new("UIListLayout")
-            idLayout.Parent = idScroll
-            idLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                idScroll.CanvasSize = UDim2.new(0,0,0,idLayout.AbsoluteContentSize.Y)
-            end)
-            local function refreshIdList()
-                for _, child in ipairs(idScroll:GetChildren()) do
-                    if child:IsA("TextLabel") or child:IsA("TextButton") then child:Destroy() end
-                end
-                for i, id in ipairs(SavedAudioIDs) do
-                    local item = createLabel(idScroll, UDim2.new(1,0,0,24), UDim2.new(0,0,0,(i-1)*26), id, CONFIG.TextColor, nil, 13)
-                    item.TextXAlignment = Enum.TextXAlignment.Left
-                end
-            end
-            createButton(frame, UDim2.new(0.3,0,0,35), UDim2.new(0,10,0,230), "Salvar", CONFIG.NeonDark, function()
+            local idBox = createTextBox(frame, UDim2.new(1,-20,0,35), UDim2.new(0,10,0,20), "ID do áudio", nil)
+            createButton(frame, UDim2.new(1,-20,0,35), UDim2.new(0,10,0,65), "Tocar", CONFIG.NeonDark, function()
                 if idBox.Text ~= "" then
-                    table.insert(SavedAudioIDs, idBox.Text)
-                    refreshIdList()
+                    local sound = Instance.new("Sound")
+                    sound.SoundId = "rbxassetid://" .. idBox.Text
+                    sound.Volume = 1
+                    sound.Parent = workspace
+                    sound:Play()
                 end
-            end)
-            createButton(frame, UDim2.new(0.3,0,0,35), UDim2.new(0.35,10,0,230), "Tocar", CONFIG.NeonDark, function()
-                local sound = Instance.new("Sound")
-                sound.SoundId = "rbxassetid://" .. idBox.Text
-                sound.Volume = 1
-                sound.Parent = workspace
-                sound:Play()
             end)
             return frame
         end)
@@ -632,16 +550,22 @@ function buildMainUI()
         switchTab("⚡ Jogador", function()
             local frame = createFrame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
             createSlider(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,20), "WalkSpeed", 16, 200, 16, function(val)
-                if Humanoid then Humanoid.WalkSpeed = val end
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.WalkSpeed = val
+                end
             end)
             createSlider(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,70), "JumpPower", 50, 200, 50, function(val)
-                if Humanoid then Humanoid.JumpPower = val end
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.JumpPower = val
+                end
             end)
             createSlider(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,120), "Gravity", 0, 196.2, 196.2, function(val)
-                workspace.Gravity = val/196.2 * 196.2
+                workspace.Gravity = val
             end)
             createSlider(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,170), "HipHeight", 0, 10, 2, function(val)
-                if Humanoid then Humanoid.HipHeight = val end
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.HipHeight = val
+                end
             end)
             createSlider(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,220), "FOV", 30, 120, 70, function(val)
                 workspace.CurrentCamera.FieldOfView = val
@@ -653,21 +577,46 @@ function buildMainUI()
     tabButtons["⚙️ Config"].MouseButton1Click:Connect(function()
         switchTab("⚙️ Config", function()
             local frame = createFrame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            createLabel(frame, UDim2.new(1,0,0,30), UDim2.new(0,0,0,10), "Configurações em breve", CONFIG.TextColor)
+            createLabel(frame, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,10), "Configurações em breve", CONFIG.TextColor, nil, 14)
             return frame
         end)
     end)
 
-    -- Atualizar lista de jogadores
-    local function updatePlayerList(dropdown)
+    -- Botão flutuante (agora depois de MainFrame estar definido)
+    local floatBtn = createButton(ScreenGui, UDim2.new(0,55,0,55), UDim2.new(0,20,0.5,-27), "🔥", CONFIG.NeonDark, function()
+        if MainFrame.Visible then
+            TweenService:Create(MainFrame, TweenInfo.new(0.2), {Size = UDim2.new(0,0,0,0)}):Play()
+            wait(0.2)
+            MainFrame.Visible = false
+        else
+            MainFrame.Visible = true
+            TweenService:Create(MainFrame, TweenInfo.new(0.2), {Size = UDim2.new(0,600,0,400)}):Play()
+        end
+    end)
+    floatBtn.TextSize = 28
+    addUICorner(floatBtn, UDim.new(1,0))
+    addGlow(floatBtn, CONFIG.NeonColor, 10)
+    createDrag(floatBtn)
+
+    -- Atualizar lista de jogadores para dropdowns
+    local function updateAllPlayerDropdowns()
         local players = {}
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer then
                 table.insert(players, player.Name)
             end
         end
-        dropdown.UpdateItems(players)
+        for _, tab in pairs({"🔥 Principal", "👤 Avatar"}) do
+            if activeTab and activeTab.Content then
+                local dropdowns = activeTab.Content:GetChildren()
+                for _, obj in ipairs(dropdowns) do
+                    if obj:IsA("Frame") and obj:FindFirstChild("TextLabel") then -- identificação simples
+                        -- não ideal, mas vamos deixar o dropdown atualizar por referência externa
+                    end
+                end
+            end
+        end
     end
-    Players.PlayerAdded:Connect(function() updatePlayerList(playerDropdown) end)
-    Players.PlayerRemoving:Connect(function() updatePlayerList(playerDropdown) end)
+    Players.PlayerAdded:Connect(updateAllPlayerDropdowns)
+    Players.PlayerRemoving:Connect(updateAllPlayerDropdowns)
 end

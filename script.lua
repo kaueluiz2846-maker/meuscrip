@@ -13,7 +13,6 @@ local corBranca = Color3.fromRGB(255, 255, 255)
 local corCinza = Color3.fromRGB(60, 60, 60)
 
 local mainFrame = nil
-local dropdownLayer = nil
 local audioStorage = {}
 local soundObj = nil
 
@@ -231,10 +230,17 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADORES (COM CanvasSize CORRIGIDO)
+-- SELETOR DE JOGADORES (CORRIGIDO COM SUA LÓGICA)
 -- ==========================================
 
-local function createPlayerSelector(parent, yPos, dropdownParent)
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FireHubUI"
+screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 9999
+screenGui.Parent = playerGui
+
+local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 55)
     container.Position = UDim2.new(0, 10, 0, yPos)
@@ -278,6 +284,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
+    -- DROPDOWN AGORA FILHO DO SCREENGUI (COMO NO SEU TESTE)
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 200)
     dropDown.BackgroundColor3 = corPreta
@@ -285,7 +292,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
     dropDown.ZIndex = 999
-    dropDown.Parent = dropdownParent
+    dropDown.Parent = screenGui
 
     local dropCorner = Instance.new("UICorner")
     dropCorner.CornerRadius = UDim.new(0, 8)
@@ -302,6 +309,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
     scrollingList.ZIndex = 1000
     scrollingList.Parent = dropDown
 
+    -- LÓGICA DE LISTA CORRIGIDA
     local function updateList()
         for _, child in ipairs(scrollingList:GetChildren()) do
             child:Destroy()
@@ -320,7 +328,7 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
                 btn.Size = UDim2.new(1, -10, 0, 25)
                 btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
                 btn.Text = p.Name
-                btn.TextColor3 = corBranca
+                btn.TextColor3 = corBranca -- Nomes Brancos
                 btn.TextSize = 14
                 btn.Font = Enum.Font.Gotham
                 btn.Parent = scrollingList
@@ -337,16 +345,12 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
         scrollingList.CanvasSize = UDim2.new(0, 0, 0, math.max(totalHeight, 10))
     end
 
-    local function updateDropdownPosition()
-        local absPos = visor.AbsolutePosition
-        local absSize = visor.AbsoluteSize
-        dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
-    end
-
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
         if dropDown.Visible then
-            updateDropdownPosition()
+            local absPos = visor.AbsolutePosition
+            local absSize = visor.AbsoluteSize
+            dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
             updateList()
         end
     end)
@@ -361,10 +365,10 @@ local function createPlayerSelector(parent, yPos, dropdownParent)
 end
 
 -- ==========================================
--- SELETOR DE MÉTODO
+-- SELETOR DE MÉTODO (MESMA CORREÇÃO)
 -- ==========================================
 
-local function createMethodSelector(parent, yPos, dropdownParent)
+local function createMethodSelector(parent, yPos)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -20, 0, 55)
     container.Position = UDim2.new(0, 10, 0, yPos)
@@ -415,7 +419,7 @@ local function createMethodSelector(parent, yPos, dropdownParent)
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
     dropDown.ZIndex = 999
-    dropDown.Parent = dropdownParent
+    dropDown.Parent = screenGui
 
     local dropCorner = Instance.new("UICorner")
     dropCorner.CornerRadius = UDim.new(0, 8)
@@ -450,16 +454,12 @@ local function createMethodSelector(parent, yPos, dropdownParent)
         y = y + 30
     end
 
-    local function updateDropdownPosition()
-        local absPos = visor.AbsolutePosition
-        local absSize = visor.AbsoluteSize
-        dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
-    end
-
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
         if dropDown.Visible then
-            updateDropdownPosition()
+            local absPos = visor.AbsolutePosition
+            local absSize = visor.AbsoluteSize
+            dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
         end
     end)
 
@@ -469,21 +469,6 @@ end
 -- ==========================================
 -- CRIAÇÃO DA INTERFACE E TELA DE LOGIN
 -- ==========================================
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FireHubUI"
-screenGui.IgnoreGuiInset = true
-screenGui.ResetOnSpawn = false
-screenGui.DisplayOrder = 9999
-screenGui.Parent = playerGui
-
-dropdownLayer = Instance.new("Frame")
-dropdownLayer.Name = "DropdownLayer"
-dropdownLayer.Size = UDim2.new(1, 0, 1, 0)
-dropdownLayer.Position = UDim2.new(0, 0, 0, 0)
-dropdownLayer.BackgroundTransparency = 1
-dropdownLayer.ZIndex = 999
-dropdownLayer.Parent = screenGui
 
 local keyFrame = createRoundedFrame(screenGui, UDim2.new(0, 340, 0, 220), UDim2.new(0.5, -170, 0.5, -110), corPreta, 0, 12)
 keyFrame.ZIndex = 999
@@ -589,7 +574,7 @@ local function updateContent(tabName)
         child:Destroy()
     end
 
-    if tabName == "ℹ️ Inf" then
+    iftabName == "ℹ️ Inf" then
         local criador = Instance.new("TextLabel")
         criador.Size = UDim2.new(1, -20, 0, 30)
         criador.Position = UDim2.new(0, 10, 0, 30)
@@ -626,8 +611,8 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 150)
 
     elseif tabName == "🔥 Principal" then
-        createPlayerSelector(contentArea, 10, dropdownLayer)
-        createMethodSelector(contentArea, 68, dropdownLayer)
+        createPlayerSelector(contentArea, 10)
+        createMethodSelector(contentArea, 68)
 
         local toggleSize = UDim2.new(1, -20, 0, 28)
         local yBase = 140 
@@ -688,7 +673,7 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, yBase + 180)
 
     elseif tabName == "👤 Avatar" then
-        createPlayerSelector(contentArea, 10, dropdownLayer)
+        createPlayerSelector(contentArea, 10)
         
         createActionButton(contentArea, "Copy avatar", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 75), function()
             local containers = contentArea:GetChildren()
@@ -773,7 +758,6 @@ local function updateContent(tabName)
         contentArea.CanvasSize = UDim2.new(0, 0, 0, 260)
 
     elseif tabName == "⚡ Jogador" then
-        -- Função para barras deslizantes (Sliders)
         local function updatePlayerStats(stat, value)
             if player.Character and player.Character:FindFirstChild("Humanoid") then
                 local hum = player.Character:FindFirstChild("Humanoid")

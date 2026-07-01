@@ -21,7 +21,7 @@ local soundObj = nil
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FireHubUI"
-screenGui.IgnoreGuiInset = true
+screenGui.IgnoreGuiInset = false  -- Alterado para false para evitar problemas de posição
 screenGui.ResetOnSpawn = false
 screenGui.DisplayOrder = 9999
 screenGui.Parent = playerGui
@@ -244,7 +244,7 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADORES (USANDO SCREENGUI GLOBAL)
+-- SELETOR DE JOGADORES (CORRIGIDO)
 -- ==========================================
 
 local function createPlayerSelector(parent, yPos)
@@ -291,6 +291,7 @@ local function createPlayerSelector(parent, yPos)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
+    -- Dropdown agora filho do playerGui
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 200)
     dropDown.BackgroundColor3 = corPreta
@@ -298,7 +299,7 @@ local function createPlayerSelector(parent, yPos)
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
     dropDown.ZIndex = 999
-    dropDown.Parent = screenGui
+    dropDown.Parent = playerGui   -- Alterado de screenGui para playerGui
 
     local dropCorner = Instance.new("UICorner")
     dropCorner.CornerRadius = UDim.new(0, 8)
@@ -314,9 +315,7 @@ local function createPlayerSelector(parent, yPos)
     scrollingList.ScrollBarImageColor3 = corNeon
     scrollingList.ZIndex = 1000
     scrollingList.Parent = dropDown
-
-    -- CORREÇÃO: desativar Active para permitir cliques nos botões filhos
-    scrollingList.Active = false
+    scrollingList.Active = false  -- Permite clicar nos botões
 
     local function updateList()
         for _, child in ipairs(scrollingList:GetChildren()) do
@@ -353,12 +352,20 @@ local function createPlayerSelector(parent, yPos)
         scrollingList.CanvasSize = UDim2.new(0, 0, 0, math.max(totalHeight, 10))
     end
 
+    -- Função de posicionamento confiável usando playerGui.AbsolutePosition
+    local function posicionarDropDown()
+        local btnPos = visor.AbsolutePosition
+        local btnSize = visor.AbsoluteSize
+        local guiPos = playerGui.AbsolutePosition  -- (0,0) confiável
+        local offsetX = btnPos.X - guiPos.X
+        local offsetY = btnPos.Y - guiPos.Y
+        dropDown.Position = UDim2.new(0, offsetX, 0, offsetY + btnSize.Y + 5)
+    end
+
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
         if dropDown.Visible then
-            local absPos = visor.AbsolutePosition
-            local absSize = visor.AbsoluteSize
-            dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
+            posicionarDropDown()
             updateList()
         end
     end)
@@ -373,7 +380,7 @@ local function createPlayerSelector(parent, yPos)
 end
 
 -- ==========================================
--- SELETOR DE MÉTODO (MESMA CORREÇÃO)
+-- SELETOR DE MÉTODO (CORRIGIDO)
 -- ==========================================
 
 local function createMethodSelector(parent, yPos)
@@ -420,6 +427,7 @@ local function createMethodSelector(parent, yPos)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
+    -- Dropdown filho do playerGui
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 110)
     dropDown.BackgroundColor3 = corPreta
@@ -427,7 +435,7 @@ local function createMethodSelector(parent, yPos)
     dropDown.BorderSizePixel = 0
     dropDown.Visible = false
     dropDown.ZIndex = 999
-    dropDown.Parent = screenGui
+    dropDown.Parent = playerGui   -- Alterado
 
     local dropCorner = Instance.new("UICorner")
     dropCorner.CornerRadius = UDim.new(0, 8)
@@ -462,12 +470,19 @@ local function createMethodSelector(parent, yPos)
         y = y + 30
     end
 
+    local function posicionarDropDown()
+        local btnPos = visor.AbsolutePosition
+        local btnSize = visor.AbsoluteSize
+        local guiPos = playerGui.AbsolutePosition
+        local offsetX = btnPos.X - guiPos.X
+        local offsetY = btnPos.Y - guiPos.Y
+        dropDown.Position = UDim2.new(0, offsetX, 0, offsetY + btnSize.Y + 5)
+    end
+
     visor.MouseButton1Click:Connect(function()
         dropDown.Visible = not dropDown.Visible
         if dropDown.Visible then
-            local absPos = visor.AbsolutePosition
-            local absSize = visor.AbsoluteSize
-            dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
+            posicionarDropDown()
         end
     end)
 
@@ -572,9 +587,7 @@ contentArea.ScrollBarImageColor3 = corNeon
 contentArea.CanvasSize = UDim2.new(0, 0, 0, 500)
 contentArea.ZIndex = 3
 contentArea.Parent = mainFrame
-
--- CORREÇÃO PRINCIPAL: desativa o Active para permitir cliques nos botões internos
-contentArea.Active = false
+contentArea.Active = false  -- CORREÇÃO: Permite cliques nos elementos internos
 
 local tabs = {"ℹ️ Inf", "🔥 Principal", "👤 Avatar", "🔊 Áudio", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚡ Jogador", "⚙️ Config"}
 local tabButtons = {}

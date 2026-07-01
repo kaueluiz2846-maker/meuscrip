@@ -16,6 +16,20 @@ local mainFrame = nil
 local audioStorage = {}
 local soundObj = nil
 
+-- ==========================================
+-- CRIAÇÃO DA SCREENGUI GLOBAL (AGORA NO INÍCIO)
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FireHubUI"
+screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 9999
+screenGui.Parent = playerGui
+
+-- ==========================================
+-- FUNÇÕES BÁSICAS DE CRIAÇÃO DE UI
+-- ==========================================
+
 local function makeDraggable(frame, dragHandle)
     local dragging = false
     local dragStart, startPos
@@ -230,15 +244,8 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADORES (CORRIGIDO COM SUA LÓGICA)
+-- SELETOR DE JOGADORES (USANDO SCREENGUI GLOBAL)
 -- ==========================================
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FireHubUI"
-screenGui.IgnoreGuiInset = true
-screenGui.ResetOnSpawn = false
-screenGui.DisplayOrder = 9999
-screenGui.Parent = playerGui
 
 local function createPlayerSelector(parent, yPos)
     local container = Instance.new("Frame")
@@ -284,7 +291,6 @@ local function createPlayerSelector(parent, yPos)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
-    -- DROPDOWN AGORA FILHO DO SCREENGUI (COMO NO SEU TESTE)
     local dropDown = Instance.new("Frame")
     dropDown.Size = UDim2.new(0, 220, 0, 200)
     dropDown.BackgroundColor3 = corPreta
@@ -328,7 +334,7 @@ local function createPlayerSelector(parent, yPos)
                 btn.Size = UDim2.new(1, -10, 0, 25)
                 btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
                 btn.Text = p.Name
-                btn.TextColor3 = corBranca -- Nomes Brancos
+                btn.TextColor3 = corBranca
                 btn.TextSize = 14
                 btn.Font = Enum.Font.Gotham
                 btn.Parent = scrollingList
@@ -574,7 +580,7 @@ local function updateContent(tabName)
         child:Destroy()
     end
 
-    iftabName == "ℹ️ Inf" then
+    if tabName == "ℹ️ Inf" then
         local criador = Instance.new("TextLabel")
         criador.Size = UDim2.new(1, -20, 0, 30)
         criador.Position = UDim2.new(0, 10, 0, 30)

@@ -17,7 +17,7 @@ local audioStorage = {}
 local soundObj = nil
 
 -- ==========================================
--- CRIAÇÃO DA SCREENGUI GLOBAL
+-- CRIAÇÃO DA SCREENGUI GLOBAL (AGORA NO INÍCIO)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FireHubUI"
@@ -244,7 +244,7 @@ local function createActionButton(parent, text, size, position, callback)
 end
 
 -- ==========================================
--- SELETOR DE JOGADORES (COM DROPDOWN EM TELA ISOLADA)
+-- SELETOR DE JOGADORES (USANDO SCREENGUI GLOBAL)
 -- ==========================================
 
 local function createPlayerSelector(parent, yPos)
@@ -273,7 +273,7 @@ local function createPlayerSelector(parent, yPos)
     visor.BackgroundColor3 = corPreta
     visor.BackgroundTransparency = 0.2
     visor.BorderSizePixel = 0
-    visor.Text = "Selecionar... ▼"
+    visor.Text = "Selecionar..."
     visor.TextColor3 = corBranca
     visor.TextSize = 14
     visor.Font = Enum.Font.GothamBold
@@ -291,67 +291,37 @@ local function createPlayerSelector(parent, yPos)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
-    local currentTempGui = nil
+    local dropDown = Instance.new("Frame")
+    dropDown.Size = UDim2.new(0, 220, 0, 200)
+    dropDown.BackgroundColor3 = corPreta
+    dropDown.BackgroundTransparency = 0.1
+    dropDown.BorderSizePixel = 0
+    dropDown.Visible = false
+    dropDown.ZIndex = 999
+    dropDown.Parent = screenGui
 
-    visor.MouseButton1Click:Connect(function()
-        -- Se já estiver aberto, apenas fecha
-        if visor.Text:find("▲") then
-            visor.Text = "Selecionar... ▼"
-            if currentTempGui then
-                currentTempGui:Destroy()
-                currentTempGui = nil
-            end
-            return
+    local dropCorner = Instance.new("UICorner")
+    dropCorner.CornerRadius = UDim.new(0, 8)
+    dropCorner.Parent = dropDown
+    aplicarNeon(dropDown, 8, 0.6, corNeon, 12)
+
+    local scrollingList = Instance.new("ScrollingFrame")
+    scrollingList.Size = UDim2.new(1, -10, 1, -10)
+    scrollingList.Position = UDim2.new(0, 5, 0, 5)
+    scrollingList.BackgroundTransparency = 1
+    scrollingList.BorderSizePixel = 0
+    scrollingList.ScrollBarThickness = 4
+    scrollingList.ScrollBarImageColor3 = corNeon
+    scrollingList.ZIndex = 1000
+    scrollingList.Parent = dropDown
+
+    -- CORREÇÃO: desativar Active para permitir cliques nos botões filhos
+    scrollingList.Active = false
+
+    local function updateList()
+        for _, child in ipairs(scrollingList:GetChildren()) do
+            child:Destroy()
         end
-
-        visor.Text = "Selecionar... ▲"
-
-        -- CRIA UMA TELA NOVA E ISOLADA EXCLUSIVAMENTE PARA O DROPDOWN (ZIndex Máximo)
-        local tempGui = Instance.new("ScreenGui")
-        tempGui.Name = "TempDropdownOverlay"
-        tempGui.IgnoreGuiInset = true
-        tempGui.ResetOnSpawn = false
-        tempGui.DisplayOrder = 999999
-        tempGui.Parent = playerGui
-        currentTempGui = tempGui
-
-        local dropDown = Instance.new("Frame")
-        dropDown.Size = UDim2.new(0, 240, 0, 250)
-        dropDown.BackgroundColor3 = corPreta
-        dropDown.BackgroundTransparency = 0.1
-        dropDown.BorderSizePixel = 0
-        dropDown.ZIndex = 9999
-        dropDown.Parent = tempGui
-
-        local dropCorner = Instance.new("UICorner")
-        dropCorner.CornerRadius = UDim.new(0, 8)
-        dropCorner.Parent = dropDown
-        aplicarNeon(dropDown, 8, 0.6, corNeon, 12)
-
-        -- Botão Fechar (X) para quando o jogador quiser
-        local closeBtn = Instance.new("TextButton")
-        closeBtn.Size = UDim2.new(0, 25, 0, 25)
-        closeBtn.Position = UDim2.new(1, -30, 0, 5)
-        closeBtn.BackgroundTransparency = 1
-        closeBtn.Text = "X"
-        closeBtn.TextColor3 = corBranca
-        closeBtn.TextSize = 14
-        closeBtn.Parent = dropDown
-        closeBtn.MouseButton1Click:Connect(function()
-            visor.Text = "Selecionar... ▼"
-            tempGui:Destroy()
-            currentTempGui = nil
-        end)
-
-        local scrollingList = Instance.new("ScrollingFrame")
-        scrollingList.Size = UDim2.new(1, -10, 1, -35)
-        scrollingList.Position = UDim2.new(0, 5, 0, 35)
-        scrollingList.BackgroundTransparency = 1
-        scrollingList.BorderSizePixel = 0
-        scrollingList.ScrollBarThickness = 4
-        scrollingList.ScrollBarImageColor3 = corNeon
-        scrollingList.ZIndex = 1000
-        scrollingList.Parent = dropDown
 
         local layout = Instance.new("UIListLayout")
         layout.Padding = UDim.new(0, 4)
@@ -373,8 +343,7 @@ local function createPlayerSelector(parent, yPos)
 
                 btn.MouseButton1Click:Connect(function()
                     visor.Text = p.Name
-                    tempGui:Destroy()
-                    currentTempGui = nil
+                    dropDown.Visible = false
                 end)
 
                 totalHeight = totalHeight + 29
@@ -382,18 +351,29 @@ local function createPlayerSelector(parent, yPos)
         end
 
         scrollingList.CanvasSize = UDim2.new(0, 0, 0, math.max(totalHeight, 10))
+    end
 
-        -- Posiciona usando coordenadas absolutas do visor
-        local absPos = visor.AbsolutePosition
-        local absSize = visor.AbsoluteSize
-        dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
+    visor.MouseButton1Click:Connect(function()
+        dropDown.Visible = not dropDown.Visible
+        if dropDown.Visible then
+            local absPos = visor.AbsolutePosition
+            local absSize = visor.AbsoluteSize
+            dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
+            updateList()
+        end
     end)
+
+    local function refreshOnChange()
+        if dropDown.Visible then updateList() end
+    end
+    Players.PlayerAdded:Connect(refreshOnChange)
+    Players.PlayerRemoving:Connect(refreshOnChange)
 
     return container
 end
 
 -- ==========================================
--- SELETOR DE MÉTODO (MESMA LÓGICA ISOLADA)
+-- SELETOR DE MÉTODO (MESMA CORREÇÃO)
 -- ==========================================
 
 local function createMethodSelector(parent, yPos)
@@ -422,7 +402,7 @@ local function createMethodSelector(parent, yPos)
     visor.BackgroundColor3 = corPreta
     visor.BackgroundTransparency = 0.2
     visor.BorderSizePixel = 0
-    visor.Text = "Selecionar... ▼"
+    visor.Text = "Selecionar..."
     visor.TextColor3 = corBranca
     visor.TextSize = 14
     visor.Font = Enum.Font.GothamBold
@@ -440,94 +420,62 @@ local function createMethodSelector(parent, yPos)
     visorCorner.Parent = visor
     aplicarNeon(visor, 4, 0.8, corNeon, 10)
 
-    local currentTempGui = nil
+    local dropDown = Instance.new("Frame")
+    dropDown.Size = UDim2.new(0, 220, 0, 110)
+    dropDown.BackgroundColor3 = corPreta
+    dropDown.BackgroundTransparency = 0.1
+    dropDown.BorderSizePixel = 0
+    dropDown.Visible = false
+    dropDown.ZIndex = 999
+    dropDown.Parent = screenGui
+
+    local dropCorner = Instance.new("UICorner")
+    dropCorner.CornerRadius = UDim.new(0, 8)
+    dropCorner.Parent = dropDown
+    aplicarNeon(dropDown, 8, 0.6, corNeon, 12)
+
+    local list = Instance.new("Frame")
+    list.Size = UDim2.new(1, -4, 1, -4)
+    list.Position = UDim2.new(0, 2, 0, 2)
+    list.BackgroundTransparency = 1
+    list.BorderSizePixel = 0
+    list.ZIndex = 1000
+    list.Parent = dropDown
+
+    local y = 0
+    local methods = {"ball", "bus", "boat"}
+    for _, m in ipairs(methods) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 28)
+        btn.Position = UDim2.new(0, 0, 0, y)
+        btn.BackgroundTransparency = 1
+        btn.Text = m
+        btn.TextColor3 = corBranca
+        btn.TextSize = 14
+        btn.Font = Enum.Font.GothamBold
+        btn.ZIndex = 1001
+        btn.Parent = list
+        btn.MouseButton1Click:Connect(function()
+            visor.Text = m
+            dropDown.Visible = false
+        end)
+        y = y + 30
+    end
 
     visor.MouseButton1Click:Connect(function()
-        if visor.Text:find("▲") then
-            visor.Text = "Selecionar... ▼"
-            if currentTempGui then
-                currentTempGui:Destroy()
-                currentTempGui = nil
-            end
-            return
+        dropDown.Visible = not dropDown.Visible
+        if dropDown.Visible then
+            local absPos = visor.AbsolutePosition
+            local absSize = visor.AbsoluteSize
+            dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
         end
-
-        visor.Text = "Selecionar... ▲"
-
-        local tempGui = Instance.new("ScreenGui")
-        tempGui.Name = "TempDropdownOverlay"
-        tempGui.IgnoreGuiInset = true
-        tempGui.ResetOnSpawn = false
-        tempGui.DisplayOrder = 999999
-        tempGui.Parent = playerGui
-        currentTempGui = tempGui
-
-        local dropDown = Instance.new("Frame")
-        dropDown.Size = UDim2.new(0, 240, 0, 160)
-        dropDown.BackgroundColor3 = corPreta
-        dropDown.BackgroundTransparency = 0.1
-        dropDown.BorderSizePixel = 0
-        dropDown.ZIndex = 9999
-        dropDown.Parent = tempGui
-
-        local dropCorner = Instance.new("UICorner")
-        dropCorner.CornerRadius = UDim.new(0, 8)
-        dropCorner.Parent = dropDown
-        aplicarNeon(dropDown, 8, 0.6, corNeon, 12)
-
-        local closeBtn = Instance.new("TextButton")
-        closeBtn.Size = UDim2.new(0, 25, 0, 25)
-        closeBtn.Position = UDim2.new(1, -30, 0, 5)
-        closeBtn.BackgroundTransparency = 1
-        closeBtn.Text = "X"
-        closeBtn.TextColor3 = corBranca
-        closeBtn.TextSize = 14
-        closeBtn.Parent = dropDown
-        closeBtn.MouseButton1Click:Connect(function()
-            visor.Text = "Selecionar... ▼"
-            tempGui:Destroy()
-            currentTempGui = nil
-        end)
-
-        local list = Instance.new("Frame")
-        list.Size = UDim2.new(1, -10, 1, -35)
-        list.Position = UDim2.new(0, 5, 0, 35)
-        list.BackgroundTransparency = 1
-        list.BorderSizePixel = 0
-        list.ZIndex = 1000
-        list.Parent = dropDown
-
-        local y = 0
-        local methods = {"ball", "bus", "boat"}
-        for _, m in ipairs(methods) do
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 28)
-            btn.Position = UDim2.new(0, 0, 0, y)
-            btn.BackgroundTransparency = 1
-            btn.Text = m
-            btn.TextColor3 = corBranca
-            btn.TextSize = 14
-            btn.Font = Enum.Font.GothamBold
-            btn.ZIndex = 1001
-            btn.Parent = list
-            
-                visor.Text = m
-                tempGui:Destroy()
-                currentTempGui = nil
-            end)
-            y = y + 30
-        end
-
-        local absPos = visor.AbsolutePosition
-        local absSize = visor.AbsoluteSize
-        dropDown.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
     end)
 
     return container
 end
 
 -- ==========================================
--- RESTANTE DA INTERFACE (TELA DE LOGIN E ABAS)
+-- CRIAÇÃO DA INTERFACE E TELA DE LOGIN
 -- ==========================================
 
 local keyFrame = createRoundedFrame(screenGui, UDim2.new(0, 340, 0, 220), UDim2.new(0.5, -170, 0.5, -110), corPreta, 0, 12)
@@ -568,7 +516,7 @@ floatBtn.ZIndex = 3
 floatBtn.Parent = screenGui
 floatBtn.Visible = false
 
-makeDraggable(floatBtn, floatBtn, floatBtn)
+makeDraggable(floatBtn, floatBtn)
 
 mainFrame = createRoundedFrame(screenGui, UDim2.new(0, 580, 0, 420), UDim2.new(0.5, -290, 0.5, -210), corPreta, 0, 12)
 mainFrame.Visible = false
@@ -624,6 +572,9 @@ contentArea.ScrollBarImageColor3 = corNeon
 contentArea.CanvasSize = UDim2.new(0, 0, 0, 500)
 contentArea.ZIndex = 3
 contentArea.Parent = mainFrame
+
+-- CORREÇÃO PRINCIPAL: desativa o Active para permitir cliques nos botões internos
+contentArea.Active = false
 
 local tabs = {"ℹ️ Inf", "🔥 Principal", "👤 Avatar", "🔊 Áudio", "⚔️ Combate", "🏃 Movimento", "📦 Outros", "⚡ Jogador", "⚙️ Config"}
 local tabButtons = {}

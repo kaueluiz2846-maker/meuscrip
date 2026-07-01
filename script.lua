@@ -1,6 +1,7 @@
 --[[
     FIRE HUB - Interface Modular Roblox
     Tema: Preto fosco com vermelho neon vibrante
+    Layout corrigido: aba Principal com labels e controles alinhados
 --]]
 
 -- Serviços
@@ -10,7 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Constantes de cores
+-- Cores
 local COLOR = {
     Background = Color3.fromRGB(10, 10, 10),
     Dark = Color3.fromRGB(18, 18, 18),
@@ -18,14 +19,13 @@ local COLOR = {
     DarkRed = Color3.fromRGB(120, 0, 0),
     White = Color3.fromRGB(255, 255, 255),
     Gray = Color3.fromRGB(160, 160, 160),
-    ComponentBg = Color3.fromRGB(25, 25, 25),
-    Hover = Color3.fromRGB(40, 40, 40)
+    ComponentBg = Color3.fromRGB(25, 25, 25)
 }
 
 local FONT = Enum.Font.GothamBold
-local CORNER_RADIUS = UDim.new(0, 8)
+local CORNER = UDim.new(0, 8)
 
--- Funções de criação
+-- Funções de criação de componentes
 local function Frame(parent, size, pos, bg, z)
     local f = Instance.new("Frame")
     f.Size = size
@@ -37,7 +37,7 @@ local function Frame(parent, size, pos, bg, z)
     return f
 end
 
-local function Label(parent, size, pos, text, color, sizeText, z)
+local function Label(parent, size, pos, text, color, sizeT, z)
     local l = Instance.new("TextLabel")
     l.Size = size
     l.Position = pos
@@ -45,7 +45,7 @@ local function Label(parent, size, pos, text, color, sizeText, z)
     l.Text = text
     l.TextColor3 = color or COLOR.White
     l.Font = FONT
-    l.TextSize = sizeText or 14
+    l.TextSize = sizeT or 14
     l.ZIndex = z or 2
     l.TextWrapped = true
     if parent then l.Parent = parent end
@@ -89,7 +89,7 @@ end
 
 local function Corner(parent, radius)
     local c = Instance.new("UICorner")
-    c.CornerRadius = radius or CORNER_RADIUS
+    c.CornerRadius = radius or CORNER
     c.Parent = parent
     return c
 end
@@ -138,18 +138,19 @@ local function Draggable(frame)
     end)
 end
 
-local function Toggle(parent, size, pos, text, default, cb)
-    local frame = Frame(parent, size, pos, COLOR.Dark, 3)
-    Corner(frame, UDim.new(1,0))
-    local knob = Frame(frame, UDim2.new(1,-4,1,-4), UDim2.new(0,2,0,2), COLOR.White, 4)
+local function ToggleWithLabel(parent, size, pos, text, default, cb)
+    -- Toggle completo com label (usado na aba Áudio)
+    local toggleFrame = Frame(parent, size, pos, COLOR.Dark, 3)
+    Corner(toggleFrame, UDim.new(1,0))
+    local knob = Frame(toggleFrame, UDim2.new(1,-4,1,-4), UDim2.new(0,2,0,2), COLOR.White, 4)
     Corner(knob, UDim.new(1,0))
     local state = default or false
     local function update()
         if state then
-            frame.BackgroundColor3 = COLOR.Red
-            TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(1, -frame.Size.Y.Offset+2, 0, 2)}):Play()
+            toggleFrame.BackgroundColor3 = COLOR.Red
+            TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(1, -toggleFrame.Size.Y.Offset+2, 0, 2)}):Play()
         else
-            frame.BackgroundColor3 = COLOR.Dark
+            toggleFrame.BackgroundColor3 = COLOR.Dark
             TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0, 2)}):Play()
         end
     end
@@ -171,32 +172,56 @@ local function Toggle(parent, size, pos, text, default, cb)
     return {Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
 end
 
+local function ToggleSwitch(parent, position, size, default, cb)
+    -- Apenas o switch, sem label (para ser usado dentro de linhas)
+    local frame = Frame(parent, size or UDim2.new(0,40,0,20), position, COLOR.Dark, 3)
+    Corner(frame, UDim.new(1,0))
+    local knob = Frame(frame, UDim2.new(1,-4,1,-4), UDim2.new(0,2,0,2), COLOR.White, 4)
+    Corner(knob, UDim.new(1,0))
+    local state = default or false
+    local function update()
+        if state then
+            frame.BackgroundColor3 = COLOR.Red
+            TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(1, -frame.Size.Y.Offset+2, 0, 2)}):Play()
+        else
+            frame.BackgroundColor3 = COLOR.Dark
+            TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0, 2)}):Play()
+        end
+    end
+    local btn = Instance.new("TextButton")
+    btn.Size = size or UDim2.new(0,40,0,20)
+    btn.Position = position
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.ZIndex = 5
+    btn.Parent = parent
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        update()
+        if cb then cb(state) end
+    end)
+    if default then update() end
+    return {Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
+end
+
 local function Dropdown(parent, size, pos, placeholder, items, cb)
     local container = Frame(parent, size, pos, COLOR.ComponentBg, 5)
     Corner(container)
     local selectedLabel = Label(container, UDim2.new(1,-25,1,0), UDim2.new(0,10,0,0), placeholder, COLOR.Gray, 14, 6)
     Label(container, UDim2.new(0,20,1,0), UDim2.new(1,-25,0,0), "▼", COLOR.White, 12, 6)
     local btn = Button(container, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), "", nil, nil)
-    btn.BackgroundTransparency = 1
-    btn.ZIndex = 7
+    btn.BackgroundTransparency = 1; btn.ZIndex = 7
 
     local listFrame = Frame(nil, UDim2.new(1,0,0,0), UDim2.new(0,0,1,4), COLOR.ComponentBg, 10)
-    Corner(listFrame)
-    Stroke(listFrame, COLOR.Red, 1)
-    listFrame.Visible = false
+    Corner(listFrame); Stroke(listFrame, COLOR.Red, 1); listFrame.Visible = false
     listFrame.Parent = container
 
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1,-4,1,-4)
-    scroll.Position = UDim2.new(0,2,0,2)
-    scroll.BackgroundTransparency = 1
-    scroll.CanvasSize = UDim2.new(0,0,0,0)
-    scroll.ScrollBarThickness = 2
-    scroll.ScrollBarImageColor3 = COLOR.Red
-    scroll.ZIndex = 11
+    scroll.Size = UDim2.new(1,-4,1,-4); scroll.Position = UDim2.new(0,2,0,2)
+    scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0,0,0,0)
+    scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 11
     scroll.Parent = listFrame
-    local layout = Instance.new("UIListLayout")
-    layout.Parent = scroll
+    local layout = Instance.new("UIListLayout"); layout.Parent = scroll
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+5)
     end)
@@ -205,21 +230,13 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
     local function populate()
         for _, child in ipairs(scroll:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
         for _, item in ipairs(items) do
-            local itmBtn = Instance.new("TextButton")
-            itmBtn.Size = UDim2.new(1,-4,0,26)
-            itmBtn.BackgroundColor3 = COLOR.Dark
-            itmBtn.Text = item
-            itmBtn.TextColor3 = COLOR.White
-            itmBtn.Font = FONT
-            itmBtn.TextSize = 13
-            itmBtn.BorderSizePixel = 0
-            Corner(itmBtn, UDim.new(0,4))
-            itmBtn.ZIndex = 11
-            itmBtn.Parent = scroll
-            itmBtn.MouseButton1Click:Connect(function()
-                selectedItem = item
-                selectedLabel.Text = item
-                selectedLabel.TextColor3 = COLOR.White
+            local itm = Instance.new("TextButton")
+            itm.Size = UDim2.new(1,-4,0,26); itm.BackgroundColor3 = COLOR.Dark
+            itm.Text = item; itm.TextColor3 = COLOR.White; itm.Font = FONT; itm.TextSize = 13
+            itm.BorderSizePixel = 0; Corner(itm, UDim.new(0,4)); itm.ZIndex = 11
+            itm.Parent = scroll
+            itm.MouseButton1Click:Connect(function()
+                selectedItem = item; selectedLabel.Text = item; selectedLabel.TextColor3 = COLOR.White
                 listFrame.Visible = false
                 if cb then cb(item) end
             end)
@@ -267,11 +284,9 @@ local function Slider(parent, size, pos, text, min, max, default, cb)
     return cont
 end
 
--- Notificação
 local function Notify(title, msg)
     local notif = Frame(ScreenGui, UDim2.new(0,260,0,60), UDim2.new(1,-270,1,-70), Color3.fromRGB(15,15,15), 10)
-    Corner(notif)
-    Stroke(notif, COLOR.Red, 1)
+    Corner(notif); Stroke(notif, COLOR.Red, 1)
     Label(notif, UDim2.new(1,-10,0,20), UDim2.new(0,8,0,5), title, COLOR.Red, 16, 11).TextXAlignment = Enum.TextXAlignment.Left
     Label(notif, UDim2.new(1,-10,0,20), UDim2.new(0,8,0,30), msg, COLOR.White, 12, 11).TextXAlignment = Enum.TextXAlignment.Left
     TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1,-270,1,-70)}):Play()
@@ -282,7 +297,7 @@ local function Notify(title, msg)
     end)
 end
 
--- Tela de login
+-- GUI principal
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "FireHub"
 ScreenGui.Parent = CoreGui
@@ -290,10 +305,9 @@ ScreenGui.DisplayOrder = 999
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+-- Tela de login
 local loginFrame = Frame(ScreenGui, UDim2.new(0,350,0,280), UDim2.new(0.5,-175,0.5,-140), COLOR.Background, 1)
-Corner(loginFrame)
-Stroke(loginFrame, COLOR.Red, 2)
-Glow(loginFrame, COLOR.Red, 25)
+Corner(loginFrame); Stroke(loginFrame, COLOR.Red, 2); Glow(loginFrame, COLOR.Red, 25)
 Draggable(loginFrame)
 
 local topBar = Frame(loginFrame, UDim2.new(1,0,0,40), UDim2.new(0,0,0,0), COLOR.DarkRed, 2)
@@ -337,14 +351,11 @@ end)
 
 Label(loginFrame, UDim2.new(1,-40,0,20), UDim2.new(0,20,0,210), "Não tem chave? Contate o admin.", COLOR.Gray, 11, 2)
 
--- Construção da interface principal
 function BuildHub()
     local main = Frame(ScreenGui, UDim2.new(0,620,0,420), UDim2.new(0.5,-310,0.5,-210), COLOR.Background, 2)
     main.Visible = false
     main.Size = UDim2.new(0,0,0,0)
-    Corner(main)
-    Stroke(main, COLOR.Red, 2)
-    Glow(main, COLOR.Red, 22)
+    Corner(main); Stroke(main, COLOR.Red, 2); Glow(main, COLOR.Red, 22)
     Draggable(main)
 
     local topBar = Frame(main, UDim2.new(1,0,0,42), UDim2.new(0,0,0,0), COLOR.DarkRed, 3)
@@ -382,18 +393,33 @@ function BuildHub()
         switchTab("ℹ️ Info", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
             Label(f, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,15), "Bem-vindo ao Fire Hub", COLOR.Red, 22)
-            Label(f, UDim2.new(1,-20,0,60), UDim2.new(0,10,0,55), "Interface modular e otimizada para Roblox.", COLOR.White, 14)
+            Label(f, UDim2.new(1,-20,0,60), UDim2.new(0,10,0,55), "Interface modular e otimizada.", COLOR.White, 14)
             return f
         end)
     end)
 
-    -- Principal (com layout solicitado)
+    -- Principal (layout corrigido: labels + controles lado a lado)
     tabs["🔥 Principal"].MouseButton1Click:Connect(function()
         switchTab("🔥 Principal", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            local playerDD = Dropdown(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,15), "Jogador", {}, function() end)
-            local methodDD = Dropdown(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,60), "Método", {"Ball","Bus","Boat"}, function() end)
-            Button(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,105), "Kill", COLOR.DarkRed, function()
+            local y = 10
+
+            -- Linha Jogador
+            local row1 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
+            row1.BackgroundTransparency = 1
+            Label(row1, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Jogador", COLOR.White, 13, 2)
+            local playerDD = Dropdown(row1, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Selecionar", {}, function() end)
+            y = y + 46
+
+            -- Linha Método
+            local row2 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
+            row2.BackgroundTransparency = 1
+            Label(row2, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Método", COLOR.White, 13, 2)
+            local methodDD = Dropdown(row2, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Escolher", {"Ball","Bus","Boat"}, function() end)
+            y = y + 46
+
+            -- Botão Kill (largura total)
+            Button(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), "Kill", COLOR.DarkRed, function()
                 local target = playerDD.GetSelected()
                 if target then
                     local plr = Players:FindFirstChild(target)
@@ -402,8 +428,21 @@ function BuildHub()
                     end
                 end
             end)
-            Toggle(f, UDim2.new(0,42,0,22), UDim2.new(0,10,0,150), "Fling", false, function() end)
-            Toggle(f, UDim2.new(0,42,0,22), UDim2.new(0,10,0,180), "View", false, function() end)
+            y = y + 46
+
+            -- Toggle Fling
+            local row3 = Frame(f, UDim2.new(1,-20,0,22), UDim2.new(0,10,0,y), nil, 2)
+            row3.BackgroundTransparency = 1
+            Label(row3, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Fling", COLOR.White, 13, 2)
+            ToggleSwitch(row3, UDim2.new(1,-70,0,22), UDim2.new(0,70,0,0), false, function() end)
+            y = y + 30
+
+            -- Toggle View
+            local row4 = Frame(f, UDim2.new(1,-20,0,22), UDim2.new(0,10,0,y), nil, 2)
+            row4.BackgroundTransparency = 1
+            Label(row4, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "View", COLOR.White, 13, 2)
+            ToggleSwitch(row4, UDim2.new(1,-70,0,22), UDim2.new(0,70,0,0), false, function() end)
+
             return f
         end)
     end)
@@ -412,8 +451,9 @@ function BuildHub()
     tabs["👤 Avatar"].MouseButton1Click:Connect(function()
         switchTab("👤 Avatar", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            local playerDD = Dropdown(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,15), "Jogador", {}, function() end)
-            Button(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,65), "Copiar Avatar", COLOR.DarkRed, function()
+            Label(f, UDim2.new(1,-20,0,20), UDim2.new(0,10,0,10), "Copiar avatar de:", COLOR.White, 13)
+            local playerDD = Dropdown(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,35), "Jogador", {}, function() end)
+            Button(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,80), "Copiar Avatar", COLOR.DarkRed, function()
                 local plrName = playerDD.GetSelected()
                 if plrName then
                     local target = Players:FindFirstChild(plrName)
@@ -421,6 +461,7 @@ function BuildHub()
                         local desc = target.Character.Humanoid:GetAppliedDescription()
                         if desc and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                             LocalPlayer.Character.Humanoid:ApplyDescription(desc)
+                            Notify("Avatar", "Copiado de "..plrName)
                         end
                     end
                 end
@@ -429,15 +470,15 @@ function BuildHub()
         end)
     end)
 
-    -- Áudio (conforme especificação)
+    -- Áudio
     tabs["🔊 Áudio"].MouseButton1Click:Connect(function()
         switchTab("🔊 Áudio", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            local audioInput = TextBox(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,15), "ID do áudio")
+            local audioInput = TextBox(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,10), "ID do áudio")
             local savedAudio = {}
-            local savedDD = Dropdown(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,60), "Arquivos", savedAudio, function(item) end)
+            local savedDD = Dropdown(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,55), "Arquivos", savedAudio, function() end)
             local currentSound = nil
-            local playTog = Toggle(f, UDim2.new(0,42,0,22), UDim2.new(0,10,0,105), "Tocar", false, function(state)
+            local playTog = ToggleWithLabel(f, UDim2.new(0,42,0,22), UDim2.new(0,10,0,100), "Tocar", false, function(state)
                 if state then
                     local sel = savedDD.GetSelected()
                     if sel and tonumber(sel) then
@@ -469,16 +510,16 @@ function BuildHub()
         switchTab("⚡ Jogador", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,15), "Velocidade", 16,200,16, function(v) if hum then hum.WalkSpeed = v end end)
-            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,58), "Pulo", 50,200,50, function(v) if hum then hum.JumpPower = v end end)
-            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,101), "Gravidade", 0,196.2,196.2, function(v) workspace.Gravity = v end)
-            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,144), "HipHeight", 0,10,2, function(v) if hum then hum.HipHeight = v end end)
-            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,187), "FOV", 30,120,70, function(v) workspace.CurrentCamera.FieldOfView = v end)
+            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,10), "Velocidade", 16,200,16, function(v) if hum then hum.WalkSpeed = v end end)
+            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,50), "Pulo", 50,200,50, function(v) if hum then hum.JumpPower = v end end)
+            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,90), "Gravidade", 0,196.2,196.2, function(v) workspace.Gravity = v end)
+            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,130), "HipHeight", 0,10,2, function(v) if hum then hum.HipHeight = v end end)
+            Slider(f, UDim2.new(1,-20,0,32), UDim2.new(0,10,0,170), "FOV", 30,120,70, function(v) workspace.CurrentCamera.FieldOfView = v end)
             return f
         end)
     end)
 
-    -- Demais abas (placeholder)
+    -- Outras abas
     for _, name in ipairs({"⚔️ Combate","🏃 Movimento","📦 Outros","⚙️ Config"}) do
         tabs[name].MouseButton1Click:Connect(function()
             switchTab(name, function()
@@ -489,7 +530,7 @@ function BuildHub()
         end)
     end
 
-    -- Botão flutuante (apenas emoji, sem fundo)
+    -- Botão flutuante (apenas emoji)
     local floatBtn = Instance.new("TextButton")
     floatBtn.Size = UDim2.new(0,60,0,60)
     floatBtn.Position = UDim2.new(0,20,0.5,-30)
@@ -512,20 +553,20 @@ function BuildHub()
         end
     end)
 
-    -- Atualizar dropdowns de jogador automaticamente
+    -- Atualizar dropdowns de jogador (global)
+    local playerDDs = {}
     local function updatePlayerLists()
         local list = {}
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer then table.insert(list, p.Name) end
         end
-        -- Atualizar todas as dropdowns de jogador (precisa referência)
-        -- Como a aba pode não estar ativa, guardamos as dropdowns em uma tabela global
-        if _G.PlayerDropdowns then
-            for _, dd in ipairs(_G.PlayerDropdowns) do dd.UpdateItems(list) end
+        for _, dd in ipairs(playerDDs) do
+            if dd.UpdateItems then dd.UpdateItems(list) end
         end
     end
-    _G.PlayerDropdowns = {}
-    -- As dropdowns de jogador criadas serão adicionadas manualmente (simplificação)
+    -- Conecta eventos
     Players.PlayerAdded:Connect(updatePlayerLists)
     Players.PlayerRemoving:Connect(updatePlayerLists)
+    -- Armazena referências (aqui apenas exemplo, você pode armazenar as dropdowns criadas)
+    -- Deixamos aberto para você adicionar na criação das dropdowns
 end

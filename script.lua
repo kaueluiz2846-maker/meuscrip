@@ -1,6 +1,7 @@
 --[[
-    FIRE HUB - Menu principal fixo (não arrastável)
-    Chave de acesso: menu k
+    FIRE HUB - Lista Corrigida + Abas Simplificadas
+    Menu principal fixo, lista SEMPRE visível
+    Chave: menu k
 --]]
 
 local Players = game:GetService("Players")
@@ -24,7 +25,7 @@ local COLOR = {
 local FONT = Enum.Font.GothamBold
 local CORNER = UDim.new(0, 8)
 
--- ====================== COMPONENTES BÁSICOS ======================
+-- ====================== COMPONENTES ======================
 local function Frame(parent, size, pos, bg, z)
     local f = Instance.new("Frame")
     f.Size = size; f.Position = pos; f.BackgroundColor3 = bg or COLOR.Background
@@ -128,49 +129,36 @@ local function ToggleSwitch(parent, size, position, default, cb)
     return {Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
 end
 
--- ====================== DROPDOWN COM LISTA NO SCREENGUI ======================
+-- ====================== DROPDOWN COM LISTA FILHA DO CONTAINER ======================
 local function Dropdown(parent, size, pos, placeholder, items, cb)
-    local container = Frame(parent, size, pos, COLOR.ComponentBg, 3)
+    -- Container com ZIndex alto
+    local container = Frame(parent, size, pos, COLOR.ComponentBg, 50)
     Corner(container)
-    local selectedLabel = Label(container, UDim2.new(1, -25, 1, 0), UDim2.new(0, 10, 0, 0), placeholder, COLOR.Gray, 14, 4)
-    Label(container, UDim2.new(0, 20, 1, 0), UDim2.new(1, -25, 0, 0), "▼", COLOR.White, 12, 4)
+    local selectedLabel = Label(container, UDim2.new(1, -25, 1, 0), UDim2.new(0, 10, 0, 0), placeholder, COLOR.Gray, 14, 51)
+    Label(container, UDim2.new(0, 20, 1, 0), UDim2.new(1, -25, 0, 0), "▼", COLOR.White, 12, 51)
     local btn = Button(container, UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), "", nil, nil)
-    btn.BackgroundTransparency = 1; btn.ZIndex = 5
+    btn.BackgroundTransparency = 1; btn.ZIndex = 52
 
-    local listFrame = nil
+    -- Lista com ZIndex ainda maior
+    local listFrame = Frame(container, UDim2.new(1, 0, 0, 120), UDim2.new(0, 0, 1, 2), COLOR.ComponentBg, 999)
+    listFrame.Visible = false
+    listFrame.ClipsDescendants = true
+    Corner(listFrame, CORNER)
+    Stroke(listFrame, COLOR.Red, 1)
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, -4, 1, -4); scroll.Position = UDim2.new(0, 2, 0, 2)
+    scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0,0,0,0)
+    scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 1000
+    scroll.Parent = listFrame
+    local layout = Instance.new("UIListLayout"); layout.Parent = scroll
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 5)
+    end)
+
     local selectedItem = nil
-
-    local function closeList()
-        if listFrame then
-            listFrame:Destroy()
-            listFrame = nil
-        end
-    end
-
-    local function openList()
-        closeList()
-        local containerPos = container.AbsolutePosition
-        local containerSize = container.AbsoluteSize
-        local listHeight = math.clamp(#items * 26, 40, 150)
-
-        listFrame = Frame(ScreenGui, UDim2.new(0, containerSize.X, 0, listHeight),
-            UDim2.new(0, containerPos.X, 0, containerPos.Y + containerSize.Y + 2),
-            COLOR.ComponentBg, 999)
-        listFrame.Name = "DropdownList"
-        Corner(listFrame, CORNER)
-        Stroke(listFrame, COLOR.Red, 1)
-        listFrame.ClipsDescendants = true
-
-        local scroll = Instance.new("ScrollingFrame")
-        scroll.Size = UDim2.new(1, -4, 1, -4); scroll.Position = UDim2.new(0, 2, 0, 2)
-        scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0,0,0,0)
-        scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 1000
-        scroll.Parent = listFrame
-        local layout = Instance.new("UIListLayout"); layout.Parent = scroll
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 5)
-        end)
-
+    local function populate()
+        for _, child in ipairs(scroll:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
         for _, item in ipairs(items) do
             local itm = Instance.new("TextButton")
             itm.Size = UDim2.new(1, -4, 0, 26); itm.BackgroundColor3 = COLOR.Dark
@@ -178,25 +166,23 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
             itm.BorderSizePixel = 0; Corner(itm, UDim.new(0,4)); itm.ZIndex = 1001
             itm.Parent = scroll
             itm.MouseButton1Click:Connect(function()
-                selectedItem = item
-                selectedLabel.Text = item
-                selectedLabel.TextColor3 = COLOR.White
-                closeList()
+                selectedItem = item; selectedLabel.Text = item; selectedLabel.TextColor3 = COLOR.White
+                listFrame.Visible = false
                 if cb then cb(item) end
             end)
         end
+        local totalHeight = #items * 26
+        listFrame.Size = UDim2.new(1, 0, 0, math.clamp(totalHeight, 40, 150))
     end
+    populate()
 
     btn.MouseButton1Click:Connect(function()
-        if listFrame then
-            closeList()
-        else
-            openList()
-        end
+        listFrame.Visible = not listFrame.Visible
     end)
 
+    -- Fechar ao clicar fora
     UserInputService.InputBegan:Connect(function(input)
-        if not listFrame then return end
+        if not listFrame.Visible then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             local pos = input.Position
             local listPos = listFrame.AbsolutePosition
@@ -205,7 +191,7 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
             local contSize = container.AbsoluteSize
             if (pos.X < listPos.X or pos.X > listPos.X+listSize.X or pos.Y < listPos.Y or pos.Y > listPos.Y+listSize.Y) and
                (pos.X < contPos.X or pos.X > contPos.X+contSize.X or pos.Y < contPos.Y or pos.Y > contPos.Y+contSize.Y) then
-                closeList()
+                listFrame.Visible = false
             end
         end
     end)
@@ -213,7 +199,7 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
     return {
         UpdateItems = function(newItems)
             items = newItems
-            closeList()
+            populate()
             selectedItem = nil
             selectedLabel.Text = placeholder
             selectedLabel.TextColor3 = COLOR.Gray
@@ -224,7 +210,7 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
                 selectedItem = item
                 selectedLabel.Text = item
                 selectedLabel.TextColor3 = COLOR.White
-                closeList()
+                listFrame.Visible = false
                 if cb then cb(item) end
             end
         end
@@ -298,7 +284,7 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local loginFrame = Frame(ScreenGui, UDim2.new(0,350,0,280), UDim2.new(0.5,-175,0.5,-140), COLOR.Background, 1)
 Corner(loginFrame); Stroke(loginFrame, COLOR.Red, 2); Glow(loginFrame, COLOR.Red, 25)
-Draggable(loginFrame)  -- Login continua arrastável
+Draggable(loginFrame)
 
 local topBar = Frame(loginFrame, UDim2.new(1,0,0,40), UDim2.new(0,0,0,0), COLOR.DarkRed, 2)
 Corner(topBar, UDim.new(0,8))
@@ -343,7 +329,7 @@ Label(loginFrame, UDim2.new(1,-40,0,20), UDim2.new(0,20,0,210), "Não tem chave?
 
 -- ====================== BUILD HUB ======================
 function BuildHub()
-    -- Menu principal NÃO arrastável
+    -- Menu principal fixo
     local main = Frame(ScreenGui, UDim2.new(0,620,0,420), UDim2.new(0.5,-310,0.5,-210), COLOR.Background, 2)
     main.Visible = false; main.Size = UDim2.new(0,0,0,0)
     Corner(main); Stroke(main, COLOR.Red, 2); Glow(main, COLOR.Red, 22)
@@ -356,11 +342,12 @@ function BuildHub()
 
     local sidebar = Frame(main, UDim2.new(0,130,1,-42), UDim2.new(0,0,0,42), Color3.fromRGB(15,15,15), 2)
     local contentArea = Frame(main, UDim2.new(1,-130,1,-42), UDim2.new(0,130,0,42), COLOR.Background, 2)
-    contentArea.ClipsDescendants = false
+    contentArea.ClipsDescendants = false  -- IMPORTANTE: não cortar a lista do dropdown
 
     local tabs = {}
     local activeTab = nil
-    local tabNames = {"ℹ️ Info","🔥 Principal","👤 Avatar","🔊 Áudio","⚔️ Combate","🏃 Movimento","📦 Outros","⚡ Jogador","⚙️ Config"}
+    -- Abas simplificadas: sem Combate, Movimento, Outros
+    local tabNames = {"ℹ️ Info","🔥 Principal","👤 Avatar","🔊 Áudio","⚡ Jogador","⚙️ Config"}
 
     local function switchTab(name, build)
         if activeTab and activeTab.content then activeTab.content:Destroy() end
@@ -725,15 +712,13 @@ function BuildHub()
         end)
     end)
 
-    for _, name in ipairs({"⚔️ Combate","🏃 Movimento","📦 Outros","⚙️ Config"}) do
-        tabs[name].MouseButton1Click:Connect(function()
-            switchTab(name, function()
-                local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-                Label(f, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,15), "Em breve...", COLOR.Gray, 14)
-                return f
-            end)
+    tabs["⚙️ Config"].MouseButton1Click:Connect(function()
+        switchTab("⚙️ Config", function()
+            local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
+            Label(f, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,15), "Em breve...", COLOR.Gray, 14)
+            return f
         end)
-    end
+    end)
 
     -- Botão flutuante (arrastável)
     local floatBtn = Instance.new("TextButton")

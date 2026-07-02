@@ -1,8 +1,5 @@
 --[[
-    FIRE HUB - Interface Modular Roblox
-    Tema: Preto fosco com vermelho neon
-    Funcionalidades: selecttool, tptool, Black Hole, View camera
-    Tudo integrado na aba "Principal"
+    FIRE HUB - Black Hole com ferramenta (transferência apenas do efeito)
 --]]
 
 local Players = game:GetService("Players")
@@ -10,8 +7,8 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local COLOR = {
     Background = Color3.fromRGB(10, 10, 10),
@@ -26,7 +23,7 @@ local COLOR = {
 local FONT = Enum.Font.GothamBold
 local CORNER = UDim.new(0, 8)
 
--- Componentes básicos (Frame, Label, Button, TextBox, etc.)
+-- ========== COMPONENTES BÁSICOS ==========
 local function Frame(parent, size, pos, bg, z)
     local f = Instance.new("Frame")
     f.Size = size; f.Position = pos; f.BackgroundColor3 = bg or COLOR.Background
@@ -130,7 +127,7 @@ local function ToggleSwitch(parent, size, position, default, cb)
     return {Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
 end
 
--- Dropdown com lista no ScreenGui (acima de tudo)
+-- ========== DROPDOWN (LISTA ACIMA DE TUDO) ==========
 local function Dropdown(parent, size, pos, placeholder, items, cb)
     local container = Frame(parent, size, pos, COLOR.ComponentBg, 5)
     Corner(container)
@@ -198,7 +195,15 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
 
     return {
         UpdateItems = function(newItems) items = newItems; populate(); selectedItem = nil; selectedLabel.Text = placeholder; selectedLabel.TextColor3 = COLOR.Gray end,
-        GetSelected = function() return selectedItem end
+        GetSelected = function() return selectedItem end,
+        SetSelected = function(item)
+            if table.find(items, item) then
+                selectedItem = item
+                selectedLabel.Text = item
+                selectedLabel.TextColor3 = COLOR.White
+                if cb then cb(item) end
+            end
+        end
     }
 end
 
@@ -242,7 +247,7 @@ local function Notify(title, msg)
     end)
 end
 
--- ================== TELA DE LOGIN ==================
+-- ========== TELA DE LOGIN ==========
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "FireHub"
 ScreenGui.Parent = CoreGui
@@ -295,7 +300,7 @@ end)
 
 Label(loginFrame, UDim2.new(1,-40,0,20), UDim2.new(0,20,0,210), "Não tem chave? Contate o admin.", COLOR.Gray, 11, 2)
 
--- ================== CONSTRUÇÃO DO HUB ==================
+-- ========== BUILD HUB ==========
 function BuildHub()
     local main = Frame(ScreenGui, UDim2.new(0,620,0,420), UDim2.new(0.5,-310,0.5,-210), COLOR.Background, 2)
     main.Visible = false; main.Size = UDim2.new(0,0,0,0)
@@ -332,7 +337,6 @@ function BuildHub()
         tabs[name] = btn
     end
 
-    -- Sistema de dropdowns de jogador
     _G.PlayerDropdowns = {}
     local function updateAllPlayerDropdowns()
         local players = {}
@@ -355,31 +359,118 @@ function BuildHub()
         return dd
     end
 
-    -- Variáveis globais para ferramentas e estado
+    -- ========== BLACK HOLE SYSTEM ==========
+    local currentBlackHoleTool = nil
+    local currentBlackHoleConnection = nil
+    local currentBlackHoleClickConnection = nil
+    local currentBlackHoleTarget = nil -- quem está sendo sugado no momento
+
+    local function removeBlackHoleTool()
+        if currentBlackHoleTool and currentBlackHoleTool.Parent then
+            currentBlackHoleTool:Destroy()
+        end
+        currentBlackHoleTool = nil
+        if currentBlackHoleConnection then
+            currentBlackHoleConnection:Disconnect()
+            currentBlackHoleConnection = nil
+        end
+        if currentBlackHoleClickConnection then
+            currentBlackHoleClickConnection:Disconnect()
+            currentBlackHoleClickConnection = nil
+        end
+        currentBlackHoleTarget = nil
+    end
+
+    local function giveBlackHoleTool()
+        removeBlackHoleTool()
+        local tool = Instance.new("Tool")
+        tool.Name = "BlackHole"
+        tool.RequiresHandle = false
+        tool.ToolTip = "Equipe para sugar objetos. Clique em outro jogador para transferir o buraco negro."
+        tool.Parent = LocalPlayer.Backpack
+        currentBlackHoleTool = tool
+
+        -- Script que gerencia a sucção e transferência
+        local script = Instance.new("LocalScript")
+        script.Parent = tool
+        script.Source = [[
+            local tool = script.Parent
+            local player = game.Players.LocalPlayer
+            local mouse = player:GetMouse()
+            local RunService = game:GetService("RunService")
+            local workspace = game:GetService("Workspace")
+
+            local connection
+            local clickConnection
+            local currentCenter = nil
+
+            tool.Equipped:Connect(function()
+                -- Define o centro inicial como o dono da ferramenta
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    currentCenter = player.Character.HumanoidRootPart
+                end
+                -- Loop de atração
+                connection = RunService.Heartbeat:Connect(function()
+                    if not currentCenter then return end
+                    local centerPos = currentCenter.Position
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj:IsA("BasePart") and not obj.Anchored then
+                            local isCharacter = false
+                            local p = obj.Parent
+                            while p do
+                                if p:IsA("Model") and p:FindFirstChild("Humanoid") then
+                                    isCharacter = true
+                                    break
+                                end
+                                p = p.Parent
+                            end
+                            if not isCharacter then
+                                local dist = (obj.Position - centerPos).Magnitude
+                                if dist < 30 then
+                                    obj.Velocity = (centerPos - obj.Position).Unit * 50
+                                end
+                            end
+                        end
+                    end
+                end)
+
+                -- Clique para transferir o centro de atração
+                clickConnection = mouse.Button1Down:Connect(function()
+                    local target = mouse.Target
+                    if target then
+                        local plr = game.Players:GetPlayerFromCharacter(target.Parent)
+                        if plr and plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                            currentCenter = plr.Character.HumanoidRootPart
+                        end
+                    end
+                end)
+            end)
+
+            tool.Unequipped:Connect(function()
+                if connection then connection:Disconnect() end
+                if clickConnection then clickConnection:Disconnect() end
+                currentCenter = nil
+            end)
+        ]]
+    end
+
+    -- ========== OUTRAS FERRAMENTAS ==========
     local currentTpTool = nil
     local currentSelectTool = nil
-    local currentBlackHoleTool = nil
-    local blackHoleConnection = nil
-    local viewConnection = nil
-    local originalCameraSubject = nil
 
-    -- Funções auxiliares
     local function removeTool(tool)
-        if tool and tool.Parent then
-            tool:Destroy()
-        end
+        if tool and tool.Parent then tool:Destroy() end
     end
 
     local function giveTpTool()
-        if currentTpTool then removeTool(currentTpTool) end
+        removeTool(currentTpTool)
         local tool = Instance.new("Tool")
         tool.Name = "tptool"
         tool.RequiresHandle = false
-        tool.ToolTip = "Teleport Tool"
+        tool.ToolTip = "Clique para teleportar"
         tool.Parent = LocalPlayer.Backpack
         currentTpTool = tool
 
-        -- Script dentro da ferramenta
         local script = Instance.new("LocalScript")
         script.Parent = tool
         script.Source = [[
@@ -387,20 +478,21 @@ function BuildHub()
             local player = game.Players.LocalPlayer
             local mouse = player:GetMouse()
             tool.Activated:Connect(function()
-                local target = mouse.Hit
-                if target and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    player.Character.HumanoidRootPart.CFrame = CFrame.new(target.Position + Vector3.new(0,3,0))
+                local pos = mouse.Hit.Position
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,3,0))
                 end
             end)
         ]]
+        Notify("tptool", "Ferramenta entregue. Clique no chão para teleportar.")
     end
 
-    local function giveSelectTool()
-        if currentSelectTool then removeTool(currentSelectTool) end
+    local function giveSelectTool(playerDropdown)
+        removeTool(currentSelectTool)
         local tool = Instance.new("Tool")
         tool.Name = "selecttool"
         tool.RequiresHandle = false
-        tool.ToolTip = "Select Player Tool"
+        tool.ToolTip = "Clique em um jogador para selecioná-lo"
         tool.Parent = LocalPlayer.Backpack
         currentSelectTool = tool
 
@@ -415,106 +507,35 @@ function BuildHub()
                 if target then
                     local plr = game.Players:GetPlayerFromCharacter(target.Parent)
                     if plr and plr ~= player then
-                        -- Exibe nome acima do jogador
-                        local billboard = Instance.new("BillboardGui")
-                        billboard.Name = "SelectedTag"
-                        billboard.Size = UDim2.new(0,100,0,30)
-                        billboard.Adornee = target
-                        billboard.Parent = target
-                        local label = Instance.new("TextLabel", billboard)
-                        label.Size = UDim2.new(1,0,1,0)
-                        label.BackgroundTransparency = 1
-                        label.Text = plr.Name
-                        label.TextColor3 = Color3.new(1,0,0)
-                        label.TextSize = 18
-                        game.Debris:AddItem(billboard, 5) -- remove after 5s
-                    end
-                end
-            end)
-        ]]
-    end
-
-    local function giveBlackHoleTool()
-        if currentBlackHoleTool then removeTool(currentBlackHoleTool) end
-        local tool = Instance.new("Tool")
-        tool.Name = "BlackHole"
-        tool.RequiresHandle = false
-        tool.ToolTip = "Black Hole"
-        tool.Parent = LocalPlayer.Backpack
-        currentBlackHoleTool = tool
-
-        -- Script que puxa objetos
-        local script = Instance.new("LocalScript")
-        script.Parent = tool
-        script.Source = [[
-            local tool = script.Parent
-            local player = game.Players.LocalPlayer
-            local mouse = player:GetMouse()
-            local RunService = game:GetService("RunService")
-            local connection
-            tool.Equipped:Connect(function()
-                connection = RunService.Stepped:Connect(function()
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local center = player.Character.HumanoidRootPart.Position
-                        for _, obj in ipairs(workspace:GetDescendants()) do
-                            if obj:IsA("BasePart") and not obj.Anchored then
-                                local distance = (obj.Position - center).Magnitude
-                                if distance < 30 then
-                                    obj.Velocity = (center - obj.Position).Unit * 50
-                                end
-                            end
+                        local dropdown = _G.CurrentPlayerDropdown
+                        if dropdown and dropdown.SetSelected then
+                            dropdown.SetSelected(plr.Name)
                         end
                     end
-                end)
-            end)
-            tool.Unequipped:Connect(function()
-                if connection then connection:Disconnect() end
-            end)
-            tool.Activated:Connect(function()
-                -- Transferir o buraco negro para o jogador clicado
-                local target = mouse.Target
-                if target then
-                    local plr = game.Players:GetPlayerFromCharacter(target.Parent)
-                    if plr and plr ~= player then
-                        -- Remove o tool atual e equipa na mochila do alvo (simulação)
-                        tool.Parent = plr.Backpack
-                    end
                 end
             end)
         ]]
+        Notify("selecttool", "Ferramenta entregue. Clique em um jogador para selecioná-lo.")
     end
 
-    -- View camera toggle
-    local function toggleView(state, playerDropdown)
+    local function toggleView(state, playerDD)
         if state then
-            local selected = playerDropdown.GetSelected()
+            local selected = playerDD.GetSelected()
             if selected then
                 local target = Players:FindFirstChild(selected)
                 if target and target.Character and target.Character:FindFirstChild("Humanoid") then
-                    originalCameraSubject = Workspace.CurrentCamera.CameraSubject
                     Workspace.CurrentCamera.CameraSubject = target.Character.Humanoid
                     Notify("View", "Câmera em "..selected)
                 end
             end
         else
-            if originalCameraSubject then
-                Workspace.CurrentCamera.CameraSubject = originalCameraSubject
-                originalCameraSubject = nil
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
             end
         end
     end
 
-    -- ============ ABAS ============
-    tabs["ℹ️ Info"].MouseButton1Click:Connect(function()
-        switchTab("ℹ️ Info", function()
-            local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-            Label(f, UDim2.new(1,-20,0,30), UDim2.new(0,10,0,15), "Bem-vindo ao Fire Hub", COLOR.Red, 22)
-            Label(f, UDim2.new(1,-20,0,60), UDim2.new(0,10,0,55), "Interface modular e otimizada.", COLOR.White, 14)
-            return f
-        end)
-    end)
-
-    -- Aba Principal com todos os itens
+    -- ========== ABA PRINCIPAL ==========
     tabs["🔥 Principal"].MouseButton1Click:Connect(function()
         switchTab("🔥 Principal", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
@@ -525,6 +546,7 @@ function BuildHub()
             row1.BackgroundTransparency = 1
             Label(row1, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Jogador", COLOR.White, 13, 2)
             local playerDD = createPlayerDropdown(row1, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Selecionar")
+            _G.CurrentPlayerDropdown = playerDD
             y = y + 46
 
             -- Método
@@ -534,80 +556,68 @@ function BuildHub()
             Dropdown(row2, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Escolher", {"Ball","Bus","Boat"}, function() end)
             y = y + 46
 
-            -- tptool
-            local row3 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
-            row3.BackgroundTransparency = 1
-            Label(row3, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "tptool", COLOR.White, 13, 2)
-            local tptoolBtn = Button(row3, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "tptool >", COLOR.DarkRed, function()
-                giveTpTool()
-                Notify("Ferramenta", "tptool entregue!")
-            end)
-            y = y + 46
-
-            -- selecttool
-            local row4 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
-            row4.BackgroundTransparency = 1
-            Label(row4, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "selecttool", COLOR.White, 13, 2)
-            Button(row4, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "selecttool >", COLOR.DarkRed, function()
-                giveSelectTool()
-                Notify("Ferramenta", "selecttool entregue!")
-            end)
-            y = y + 46
-
-            -- Black Hole toggle
-            local row5 = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2)
-            row5.BackgroundTransparency = 1
-            Label(row5, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Black Hole", COLOR.White, 13, 2)
-            local bhToggle = ToggleSwitch(row5, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state)
-                if state then
-                    giveBlackHoleTool()
-                    Notify("Black Hole", "Ativado")
-                else
-                    removeTool(currentBlackHoleTool)
-                    currentBlackHoleTool = nil
-                    Notify("Black Hole", "Desativado")
-                end
-            end)
-            y = y + 30
-
             -- Kill
-            local row6 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
-            row6.BackgroundTransparency = 1
-            Label(row6, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Kill", COLOR.White, 13, 2)
-            Button(row6, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Kill >", COLOR.DarkRed, function()
+            local killRow = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
+            killRow.BackgroundTransparency = 1
+            Label(killRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Kill", COLOR.White, 13, 2)
+            Button(killRow, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Kill >", COLOR.DarkRed, function()
                 local target = playerDD.GetSelected()
                 if target then
                     local plr = Players:FindFirstChild(target)
                     if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
                         plr.Character.Humanoid.Health = 0
-                        Notify("Kill", target)
                     end
                 end
             end)
             y = y + 46
 
             -- Fling
-            local row7 = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2)
-            row7.BackgroundTransparency = 1
-            Label(row7, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Fling", COLOR.White, 13, 2)
-            ToggleSwitch(row7, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state)
-                -- Ação do fling pode ser implementada aqui
-            end)
+            local flingRow = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2)
+            flingRow.BackgroundTransparency = 1
+            Label(flingRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Fling", COLOR.White, 13, 2)
+            ToggleSwitch(flingRow, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function() end)
             y = y + 30
 
             -- View
-            local row8 = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2)
-            row8.BackgroundTransparency = 1
-            Label(row8, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "View", COLOR.White, 13, 2)
-            ToggleSwitch(row8, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state)
-                toggleView(state, playerDD)
+            local viewRow = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2)
+            viewRow.BackgroundTransparency = 1
+            Label(viewRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "View", COLOR.White, 13, 2)
+            ToggleSwitch(viewRow, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state) toggleView(state, playerDD) end)
+            y = y + 30
+
+            -- tptool
+            local tpRow = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
+            tpRow.BackgroundTransparency = 1
+            Label(tpRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "tptool", COLOR.White, 13, 2)
+            Button(tpRow, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "tptool >", COLOR.DarkRed, function() giveTpTool() end)
+            y = y + 46
+
+            -- selecttool
+            local selRow = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
+            selRow.BackgroundTransparency = 1
+            Label(selRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "selecttool", COLOR.White, 13, 2)
+            Button(selRow, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "selecttool >", COLOR.DarkRed, function() giveSelectTool(playerDD) end)
+            y = y + 46
+
+            -- Black Hole
+            local bhRow = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2)
+            bhRow.BackgroundTransparency = 1
+            Label(bhRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Black Hole", COLOR.White, 13, 2)
+            ToggleSwitch(bhRow, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state)
+                if state then
+                    giveBlackHoleTool()
+                    Notify("Black Hole", "Ferramenta criada! Equipe e clique em alguém para transferir o buraco negro.")
+                else
+                    removeBlackHoleTool()
+                    Notify("Black Hole", "Desativado")
+                end
             end)
 
             return f
         end)
     end)
 
-    -- Outras abas mantidas iguais (Avatar, Áudio, Jogador, placeholders)
+    -- ========== OUTRAS ABAS ==========
     tabs["👤 Avatar"].MouseButton1Click:Connect(function()
         switchTab("👤 Avatar", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
@@ -636,20 +646,17 @@ function BuildHub()
         switchTab("🔊 Áudio", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
             local y = 10
-            -- Áudio field
             local row1 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
             row1.BackgroundTransparency = 1
             Label(row1, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Áudio", COLOR.White, 13, 2)
             local audioInput = TextBox(row1, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "ID do áudio")
             y = y + 46
-            -- Arquivos
             local row2 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
             row2.BackgroundTransparency = 1
             Label(row2, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Arquivos", COLOR.White, 13, 2)
             local savedAudio = {}
             local savedDD = Dropdown(row2, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Salvos", savedAudio, function() end)
             y = y + 46
-            -- Tocar
             local row3 = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2)
             row3.BackgroundTransparency = 1
             Label(row3, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Tocar", COLOR.White, 13, 2)
@@ -670,7 +677,6 @@ function BuildHub()
                 end
             end)
             y = y + 30
-            -- Save
             local row4 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2)
             row4.BackgroundTransparency = 1
             Label(row4, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Save", COLOR.White, 13, 2)

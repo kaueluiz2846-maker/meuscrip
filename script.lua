@@ -1,5 +1,7 @@
 --[[
-    FIRE HUB - Script Final com Dropdown Corrigido e Ferramentas
+    FIRE HUB - Script Final com Dropdown Sempre Acima
+    Chave de login: menu k
+    Inclui: tptool, selecttool, Black Hole, View camera, sliders, áudio
 --]]
 
 local Players = game:GetService("Players")
@@ -23,7 +25,7 @@ local COLOR = {
 local FONT = Enum.Font.GothamBold
 local CORNER = UDim.new(0, 8)
 
--- ========== COMPONENTES BÁSICOS ==========
+-- ====================== COMPONENTES ======================
 local function Frame(parent, size, pos, bg, z)
     local f = Instance.new("Frame")
     f.Size = size; f.Position = pos; f.BackgroundColor3 = bg or COLOR.Background
@@ -127,25 +129,23 @@ local function ToggleSwitch(parent, size, position, default, cb)
     return {Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
 end
 
--- ========== DROPDOWN CORRIGIDO (LISTA DENTRO DO PRÓPRIO CONTAINER) ==========
+-- ====================== DROPDOWN COM LISTA ACIMA DE TUDO ======================
 local function Dropdown(parent, size, pos, placeholder, items, cb)
-    local container = Frame(parent, size, pos, COLOR.ComponentBg, 10)
+    local container = Frame(parent, size, pos, COLOR.ComponentBg, 999)
     Corner(container)
-    local selectedLabel = Label(container, UDim2.new(1, -25, 1, 0), UDim2.new(0, 10, 0, 0), placeholder, COLOR.Gray, 14, 11)
-    Label(container, UDim2.new(0, 20, 1, 0), UDim2.new(1, -25, 0, 0), "▼", COLOR.White, 12, 11)
+    local selectedLabel = Label(container, UDim2.new(1, -25, 1, 0), UDim2.new(0, 10, 0, 0), placeholder, COLOR.Gray, 14, 1001)
+    Label(container, UDim2.new(0, 20, 1, 0), UDim2.new(1, -25, 0, 0), "▼", COLOR.White, 12, 1001)
     local btn = Button(container, UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), "", nil, nil)
-    btn.BackgroundTransparency = 1; btn.ZIndex = 12
+    btn.BackgroundTransparency = 1; btn.ZIndex = 1002
 
-    local listFrame = Frame(container, UDim2.new(1, 0, 0, 120), UDim2.new(0, 0, 1, 2), COLOR.ComponentBg, 100)
-    listFrame.Visible = false
-    listFrame.ClipsDescendants = true
-    Corner(listFrame, CORNER)
-    Stroke(listFrame, COLOR.Red, 1)
+    local listFrame = Frame(container, UDim2.new(1, 0, 0, 120), UDim2.new(0, 0, 1, 2), COLOR.ComponentBg, 1000)
+    listFrame.Visible = false; listFrame.ClipsDescendants = true
+    Corner(listFrame, CORNER); Stroke(listFrame, COLOR.Red, 1)
 
     local scroll = Instance.new("ScrollingFrame")
     scroll.Size = UDim2.new(1, -4, 1, -4); scroll.Position = UDim2.new(0, 2, 0, 2)
     scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0,0,0,0)
-    scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 101
+    scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 1001
     scroll.Parent = listFrame
     local layout = Instance.new("UIListLayout"); layout.Parent = scroll
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -159,7 +159,7 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
             local itm = Instance.new("TextButton")
             itm.Size = UDim2.new(1, -4, 0, 26); itm.BackgroundColor3 = COLOR.Dark
             itm.Text = item; itm.TextColor3 = COLOR.White; itm.Font = FONT; itm.TextSize = 13
-            itm.BorderSizePixel = 0; Corner(itm, UDim.new(0,4)); itm.ZIndex = 102
+            itm.BorderSizePixel = 0; Corner(itm, UDim.new(0,4)); itm.ZIndex = 1002
             itm.Parent = scroll
             itm.MouseButton1Click:Connect(function()
                 selectedItem = item; selectedLabel.Text = item; selectedLabel.TextColor3 = COLOR.White
@@ -212,7 +212,7 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
     }
 end
 
--- ========== SLIDER ==========
+-- ====================== SLIDER ======================
 local function Slider(parent, size, pos, text, min, max, default, cb)
     local cont = Frame(parent, size, pos, COLOR.ComponentBg, 3)
     Corner(cont)
@@ -240,7 +240,7 @@ local function Slider(parent, size, pos, text, min, max, default, cb)
     return cont
 end
 
--- ========== NOTIFICAÇÃO ==========
+-- ====================== NOTIFICAÇÃO ======================
 local function Notify(title, msg)
     local notif = Frame(ScreenGui, UDim2.new(0,260,0,60), UDim2.new(1,-270,1,-70), Color3.fromRGB(15,15,15), 10)
     Corner(notif); Stroke(notif, COLOR.Red, 1)
@@ -254,7 +254,7 @@ local function Notify(title, msg)
     end)
 end
 
--- ========== TELA DE LOGIN ==========
+-- ====================== TELA DE LOGIN ======================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "FireHub"
 ScreenGui.Parent = CoreGui
@@ -307,7 +307,7 @@ end)
 
 Label(loginFrame, UDim2.new(1,-40,0,20), UDim2.new(0,20,0,210), "Não tem chave? Contate o admin.", COLOR.Gray, 11, 2)
 
--- ========== BUILD HUB ==========
+-- ====================== BUILD HUB ======================
 function BuildHub()
     local main = Frame(ScreenGui, UDim2.new(0,620,0,420), UDim2.new(0.5,-310,0.5,-210), COLOR.Background, 2)
     main.Visible = false; main.Size = UDim2.new(0,0,0,0)
@@ -344,7 +344,6 @@ function BuildHub()
         tabs[name] = btn
     end
 
-    -- Gerenciamento de dropdowns de jogador
     _G.PlayerDropdowns = {}
     local function updateAllPlayerDropdowns()
         local players = {}
@@ -368,15 +367,12 @@ function BuildHub()
     end
 
     -- Ferramentas
-    local currentTpTool = nil
-    local currentSelectTool = nil
-    local currentBlackHoleTool = nil
+    local currentTpTool, currentSelectTool, currentBlackHoleTool = nil, nil, nil
 
     local function removeTool(tool)
         if tool and tool.Parent then tool:Destroy() end
     end
 
-    -- TpTool
     local function giveTpTool()
         removeTool(currentTpTool)
         local tool = Instance.new("Tool")
@@ -402,13 +398,12 @@ function BuildHub()
         Notify("tptool", "Ferramenta entregue. Clique no chão para teleportar.")
     end
 
-    -- SelectTool (integra com dropdown da aba Principal)
     local function giveSelectTool(playerDropdown)
         removeTool(currentSelectTool)
         local tool = Instance.new("Tool")
         tool.Name = "selecttool"
         tool.RequiresHandle = false
-        tool.ToolTip = "Clique em um jogador para selecioná-lo no menu"
+        tool.ToolTip = "Clique em um jogador para selecioná-lo"
         tool.Parent = LocalPlayer.Backpack
         currentSelectTool = tool
 
@@ -434,7 +429,6 @@ function BuildHub()
         Notify("selecttool", "Ferramenta entregue. Clique em um jogador para selecioná-lo.")
     end
 
-    -- Black Hole (ferramenta fica com você, efeito transferido ao clicar)
     local function giveBlackHoleTool()
         removeTool(currentBlackHoleTool)
         local tool = Instance.new("Tool")
@@ -526,7 +520,7 @@ function BuildHub()
         end
     end
 
-    -- ========== ABAS ==========
+    -- ====================== ABAS ======================
     tabs["ℹ️ Info"].MouseButton1Click:Connect(function()
         switchTab("ℹ️ Info", function()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))

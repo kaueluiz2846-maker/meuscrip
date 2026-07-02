@@ -1,5 +1,6 @@
 --[[
-    FIRE HUB - Script Final Corrigido (Lista sobre tudo + Drag apenas no topo)
+    FIRE HUB - Menu principal fixo (não arrastável)
+    Chave de acesso: menu k
 --]]
 
 local Players = game:GetService("Players")
@@ -23,7 +24,7 @@ local COLOR = {
 local FONT = Enum.Font.GothamBold
 local CORNER = UDim.new(0, 8)
 
--- Componentes básicos (Frame, Label, Button, TextBox, etc.)
+-- ====================== COMPONENTES BÁSICOS ======================
 local function Frame(parent, size, pos, bg, z)
     local f = Instance.new("Frame")
     f.Size = size; f.Position = pos; f.BackgroundColor3 = bg or COLOR.Background
@@ -103,10 +104,10 @@ end
 
 local function ToggleSwitch(parent, size, position, default, cb)
     local width = size.X.Offset or 44; local height = size.Y.Offset or 24
-    local frame = Frame(parent, UDim2.new(0, width, 0, height), position, COLOR.Dark, 3)
+    local frame = Frame(parent, UDim2.new(0, width, 0, height), position, COLOR.Dark, 4)
     Corner(frame, UDim.new(1, 0)); Stroke(frame, COLOR.Red, 1)
     local knobSize = height - 6
-    local knob = Frame(frame, UDim2.new(0, knobSize, 0, knobSize), UDim2.new(0, 3, 0, 3), COLOR.White, 4)
+    local knob = Frame(frame, UDim2.new(0, knobSize, 0, knobSize), UDim2.new(0, 3, 0, 3), COLOR.White, 5)
     Corner(knob, UDim.new(1, 0))
     local state = default or false
     local function update()
@@ -119,7 +120,7 @@ local function ToggleSwitch(parent, size, position, default, cb)
         end
     end
     local btn = Instance.new("TextButton"); btn.Size = UDim2.new(1,0,1,0); btn.Position = UDim2.new(0,0,0,0)
-    btn.BackgroundTransparency = 1; btn.Text = ""; btn.ZIndex = 5; btn.Parent = frame
+    btn.BackgroundTransparency = 1; btn.Text = ""; btn.ZIndex = 6; btn.Parent = frame
     btn.MouseButton1Click:Connect(function()
         state = not state; update(); if cb then cb(state) end
     end)
@@ -127,14 +128,14 @@ local function ToggleSwitch(parent, size, position, default, cb)
     return {Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
 end
 
--- Dropdown com lista no ScreenGui (acima de tudo)
+-- ====================== DROPDOWN COM LISTA NO SCREENGUI ======================
 local function Dropdown(parent, size, pos, placeholder, items, cb)
-    local container = Frame(parent, size, pos, COLOR.ComponentBg, 5)
+    local container = Frame(parent, size, pos, COLOR.ComponentBg, 3)
     Corner(container)
-    local selectedLabel = Label(container, UDim2.new(1, -25, 1, 0), UDim2.new(0, 10, 0, 0), placeholder, COLOR.Gray, 14, 6)
-    Label(container, UDim2.new(0, 20, 1, 0), UDim2.new(1, -25, 0, 0), "▼", COLOR.White, 12, 6)
+    local selectedLabel = Label(container, UDim2.new(1, -25, 1, 0), UDim2.new(0, 10, 0, 0), placeholder, COLOR.Gray, 14, 4)
+    Label(container, UDim2.new(0, 20, 1, 0), UDim2.new(1, -25, 0, 0), "▼", COLOR.White, 12, 4)
     local btn = Button(container, UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), "", nil, nil)
-    btn.BackgroundTransparency = 1; btn.ZIndex = 7
+    btn.BackgroundTransparency = 1; btn.ZIndex = 5
 
     local listFrame = nil
     local selectedItem = nil
@@ -147,11 +148,14 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
     end
 
     local function openList()
-        closeList() -- Remove qualquer lista anterior
-        -- Cria lista no ScreenGui com ZIndex altíssimo
-        listFrame = Frame(ScreenGui, UDim2.new(0, container.AbsoluteSize.X, 0, math.clamp(#items * 26, 40, 150)),
-            UDim2.new(0, container.AbsolutePosition.X, 0, container.AbsolutePosition.Y + container.AbsoluteSize.Y + 2),
-            COLOR.ComponentBg, 9999)
+        closeList()
+        local containerPos = container.AbsolutePosition
+        local containerSize = container.AbsoluteSize
+        local listHeight = math.clamp(#items * 26, 40, 150)
+
+        listFrame = Frame(ScreenGui, UDim2.new(0, containerSize.X, 0, listHeight),
+            UDim2.new(0, containerPos.X, 0, containerPos.Y + containerSize.Y + 2),
+            COLOR.ComponentBg, 999)
         listFrame.Name = "DropdownList"
         Corner(listFrame, CORNER)
         Stroke(listFrame, COLOR.Red, 1)
@@ -160,19 +164,18 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
         local scroll = Instance.new("ScrollingFrame")
         scroll.Size = UDim2.new(1, -4, 1, -4); scroll.Position = UDim2.new(0, 2, 0, 2)
         scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0,0,0,0)
-        scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 10000
+        scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 1000
         scroll.Parent = listFrame
         local layout = Instance.new("UIListLayout"); layout.Parent = scroll
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 5)
         end)
 
-        -- Preenche itens
         for _, item in ipairs(items) do
             local itm = Instance.new("TextButton")
             itm.Size = UDim2.new(1, -4, 0, 26); itm.BackgroundColor3 = COLOR.Dark
             itm.Text = item; itm.TextColor3 = COLOR.White; itm.Font = FONT; itm.TextSize = 13
-            itm.BorderSizePixel = 0; Corner(itm, UDim.new(0,4)); itm.ZIndex = 10001
+            itm.BorderSizePixel = 0; Corner(itm, UDim.new(0,4)); itm.ZIndex = 1001
             itm.Parent = scroll
             itm.MouseButton1Click:Connect(function()
                 selectedItem = item
@@ -192,7 +195,6 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
         end
     end)
 
-    -- Fecha ao clicar fora
     UserInputService.InputBegan:Connect(function(input)
         if not listFrame then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -208,9 +210,7 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
         end
     end)
 
-    -- Ao atualizar itens, fechar a lista existente
-    local oldUpdateItems
-    local self = {
+    return {
         UpdateItems = function(newItems)
             items = newItems
             closeList()
@@ -229,10 +229,9 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
             end
         end
     }
-    return self
 end
 
--- Slider (sem arrastar janela)
+-- ====================== SLIDER ======================
 local function Slider(parent, size, pos, text, min, max, default, cb)
     local cont = Frame(parent, size, pos, COLOR.ComponentBg, 3)
     Corner(cont)
@@ -299,7 +298,7 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local loginFrame = Frame(ScreenGui, UDim2.new(0,350,0,280), UDim2.new(0.5,-175,0.5,-140), COLOR.Background, 1)
 Corner(loginFrame); Stroke(loginFrame, COLOR.Red, 2); Glow(loginFrame, COLOR.Red, 25)
-Draggable(loginFrame)
+Draggable(loginFrame)  -- Login continua arrastável
 
 local topBar = Frame(loginFrame, UDim2.new(1,0,0,40), UDim2.new(0,0,0,0), COLOR.DarkRed, 2)
 Corner(topBar, UDim.new(0,8))
@@ -344,43 +343,20 @@ Label(loginFrame, UDim2.new(1,-40,0,20), UDim2.new(0,20,0,210), "Não tem chave?
 
 -- ====================== BUILD HUB ======================
 function BuildHub()
+    -- Menu principal NÃO arrastável
     local main = Frame(ScreenGui, UDim2.new(0,620,0,420), UDim2.new(0.5,-310,0.5,-210), COLOR.Background, 2)
     main.Visible = false; main.Size = UDim2.new(0,0,0,0)
     Corner(main); Stroke(main, COLOR.Red, 2); Glow(main, COLOR.Red, 22)
 
-    -- Apenas a barra superior arrasta a janela
     local topBar = Frame(main, UDim2.new(1,0,0,42), UDim2.new(0,0,0,0), COLOR.DarkRed, 3)
     Corner(topBar, UDim.new(0,8))
-    Draggable(main)  -- Faz o main inteiro ser arrastado, mas apenas quando clicar na topBar? Vamos fazer diferente:
-    -- Corrigido: removemos Draggable do main, e adicionamos apenas na topBar, mas arrastando o main.
-    -- A lógica de arrastar deve mover o main quando o topBar é arrastado.
-    -- Implementarei manualmente: armazenar referência do main, e ao arrastar topBar, mover main.
-    Draggable(topBar)  -- Isso vai mover apenas o topBar, não o main. Precisamos ajustar.
-    -- Em vez disso, farei uma função DraggableWindow que move a janela quando a barra é arrastada.
-    
-    -- Removo Draggable(topBar) e faço um sistema separado:
-    local dragMain, startMain, startPosMain
-    topBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragMain = true; startMain = input.Position; startPosMain = main.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragMain = false end
-            end)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragMain and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - startMain
-            main.Position = UDim2.new(startPosMain.X.Scale, startPosMain.X.Offset + delta.X, startPosMain.Y.Scale, startPosMain.Y.Offset + delta.Y)
-        end
-    end)
-
     Label(topBar, UDim2.new(1,-70,1,0), UDim2.new(0,12,0,0), "FIRE HUB", COLOR.White, 20, 4)
     Button(topBar, UDim2.new(0,32,0,32), UDim2.new(1,-70,0,5), "—", COLOR.DarkRed, function() main.Visible = false end)
     Button(topBar, UDim2.new(0,32,0,32), UDim2.new(1,-36,0,5), "×", COLOR.DarkRed, function() main.Visible = false end).TextSize = 20
 
     local sidebar = Frame(main, UDim2.new(0,130,1,-42), UDim2.new(0,0,0,42), Color3.fromRGB(15,15,15), 2)
     local contentArea = Frame(main, UDim2.new(1,-130,1,-42), UDim2.new(0,130,0,42), COLOR.Background, 2)
+    contentArea.ClipsDescendants = false
 
     local tabs = {}
     local activeTab = nil
@@ -425,7 +401,7 @@ function BuildHub()
         return dd
     end
 
-    -- Ferramentas (idêntico ao anterior)
+    -- Ferramentas
     local currentTpTool, currentSelectTool, currentBlackHoleTool = nil, nil, nil
 
     local function removeTool(tool)
@@ -759,7 +735,7 @@ function BuildHub()
         end)
     end
 
-    -- Botão flutuante
+    -- Botão flutuante (arrastável)
     local floatBtn = Instance.new("TextButton")
     floatBtn.Size = UDim2.new(0,60,0,60)
     floatBtn.Position = UDim2.new(0,20,0.5,-30)

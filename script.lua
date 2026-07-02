@@ -1,5 +1,5 @@
 --[[
-    FIRE HUB V2.0 - Aba Config completa + PopupLayer + Menu fixo
+    FIRE HUB V2.0 - Completo e Corrigido
     Chave: menu k
 --]]
 
@@ -10,15 +10,6 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local Debris = game:GetService("Debris")
-
--- Configurações globais (podem ser alteradas pela aba Config)
-_G.Settings = _G.Settings or {
-    Animations = true,
-    Glow = true,
-    Notifications = true,
-    Sounds = true
-}
 
 local COLOR = {
     Background = Color3.fromRGB(10, 10, 10),
@@ -33,74 +24,48 @@ local COLOR = {
 local FONT = Enum.Font.GothamBold
 local CORNER = UDim.new(0, 8)
 
--- ====================== COMPONENTES BÁSICOS ======================
+_G.Settings = _G.Settings or { Animations = true, Glow = true, Notifications = true, Sounds = true }
+
+-- Componentes básicos
 local function Frame(parent, size, pos, bg, z)
-    local f = Instance.new("Frame")
-    f.Size = size; f.Position = pos; f.BackgroundColor3 = bg or COLOR.Background
-    f.BorderSizePixel = 0; f.ZIndex = z or 1
-    if parent then f.Parent = parent end
-    return f
+    local f = Instance.new("Frame"); f.Size = size; f.Position = pos; f.BackgroundColor3 = bg or COLOR.Background
+    f.BorderSizePixel = 0; f.ZIndex = z or 1; if parent then f.Parent = parent end; return f
 end
-
 local function Label(parent, size, pos, text, color, sizeT, z)
-    local l = Instance.new("TextLabel")
-    l.Size = size; l.Position = pos; l.BackgroundTransparency = 1
-    l.Text = text; l.TextColor3 = color or COLOR.White
-    l.Font = FONT; l.TextSize = sizeT or 14; l.ZIndex = z or 2
-    l.TextWrapped = true
-    if parent then l.Parent = parent end
-    return l
+    local l = Instance.new("TextLabel"); l.Size = size; l.Position = pos; l.BackgroundTransparency = 1
+    l.Text = text; l.TextColor3 = color or COLOR.White; l.Font = FONT; l.TextSize = sizeT or 14; l.ZIndex = z or 2
+    l.TextWrapped = true; if parent then l.Parent = parent end; return l
 end
-
 local function Button(parent, size, pos, text, bg, cb)
-    local b = Instance.new("TextButton")
-    b.Size = size; b.Position = pos; b.BackgroundColor3 = bg or COLOR.DarkRed
-    b.Text = text; b.TextColor3 = COLOR.White; b.Font = FONT; b.TextSize = 14
-    b.BorderSizePixel = 0; b.AutoButtonColor = false; b.ZIndex = 3
-    if parent then b.Parent = parent end
-    if cb then b.MouseButton1Click:Connect(cb) end
-    return b
+    local b = Instance.new("TextButton"); b.Size = size; b.Position = pos; b.BackgroundColor3 = bg or COLOR.DarkRed
+    b.Text = text; b.TextColor3 = COLOR.White; b.Font = FONT; b.TextSize = 14; b.BorderSizePixel = 0; b.AutoButtonColor = false
+    b.ZIndex = 3; if parent then b.Parent = parent end; if cb then b.MouseButton1Click:Connect(cb) end; return b
 end
-
 local function TextBox(parent, size, pos, placeholder, cb)
-    local tb = Instance.new("TextBox")
-    tb.Size = size; tb.Position = pos; tb.BackgroundColor3 = COLOR.ComponentBg
-    tb.TextColor3 = COLOR.White; tb.PlaceholderText = placeholder or ""
-    tb.PlaceholderColor3 = COLOR.Gray; tb.Font = FONT; tb.TextSize = 14
-    tb.BorderSizePixel = 0; tb.ZIndex = 3; tb.ClearTextOnFocus = false
-    if parent then tb.Parent = parent end
-    if cb then tb.FocusLost:Connect(function(ep) cb(tb.Text, ep) end) end
-    return tb
+    local tb = Instance.new("TextBox"); tb.Size = size; tb.Position = pos; tb.BackgroundColor3 = COLOR.ComponentBg
+    tb.TextColor3 = COLOR.White; tb.PlaceholderText = placeholder or ""; tb.PlaceholderColor3 = COLOR.Gray
+    tb.Font = FONT; tb.TextSize = 14; tb.BorderSizePixel = 0; tb.ZIndex = 3; tb.ClearTextOnFocus = false
+    if parent then tb.Parent = parent end; if cb then tb.FocusLost:Connect(function(ep) cb(tb.Text, ep) end) end; return tb
 end
-
 local function Corner(parent, radius)
-    local c = Instance.new("UICorner"); c.CornerRadius = radius or CORNER; c.Parent = parent
-    return c
+    local c = Instance.new("UICorner"); c.CornerRadius = radius or CORNER; c.Parent = parent; return c
 end
-
 local function Stroke(parent, color, thickness)
-    local s = Instance.new("UIStroke"); s.Color = color or COLOR.Red
-    s.Thickness = thickness or 1.5; s.Transparency = 0.2; s.Parent = parent
-    return s
+    local s = Instance.new("UIStroke"); s.Color = color or COLOR.Red; s.Thickness = thickness or 1.5; s.Transparency = 0.2
+    s.Parent = parent; return s
 end
-
 local function Glow(parent, color, size)
     local g = Instance.new("ImageLabel"); g.Name = "Glow"; g.BackgroundTransparency = 1
-    g.Image = "rbxassetid://6031280886"; g.ImageColor3 = color or COLOR.Red
-    g.ScaleType = Enum.ScaleType.Slice; g.SliceCenter = Rect.new(32, 32, 32, 32)
-    g.Size = UDim2.new(1, size*2, 1, size*2); g.Position = UDim2.new(0, -size, 0, -size)
-    g.ZIndex = 0; g.Parent = parent
-    return g
+    g.Image = "rbxassetid://6031280886"; g.ImageColor3 = color or COLOR.Red; g.ScaleType = Enum.ScaleType.Slice
+    g.SliceCenter = Rect.new(32, 32, 32, 32); g.Size = UDim2.new(1, size*2, 1, size*2)
+    g.Position = UDim2.new(0, -size, 0, -size); g.ZIndex = 0; g.Parent = parent; return g
 end
-
 local function Draggable(frame)
     local drag, startInput, startPos
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             drag = true; startInput = input.Position; startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then drag = false end
-            end)
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then drag = false end end)
         end
     end)
     UserInputService.InputChanged:Connect(function(input)
@@ -110,7 +75,6 @@ local function Draggable(frame)
         end
     end)
 end
-
 local function ToggleSwitch(parent, size, position, default, cb)
     local width = size.X.Offset or 44; local height = size.Y.Offset or 24
     local frame = Frame(parent, UDim2.new(0, width, 0, height), position, COLOR.Dark, 4)
@@ -120,24 +84,17 @@ local function ToggleSwitch(parent, size, position, default, cb)
     Corner(knob, UDim.new(1, 0))
     local state = default or false
     local function update()
-        if state then
-            frame.BackgroundColor3 = COLOR.Red
-            TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(1, -knobSize-3, 0, 3)}):Play()
-        else
-            frame.BackgroundColor3 = COLOR.Dark
-            TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0, 3)}):Play()
-        end
+        if state then frame.BackgroundColor3 = COLOR.Red; TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(1, -knobSize-3, 0, 3)}):Play()
+        else frame.BackgroundColor3 = COLOR.Dark; TweenService:Create(knob, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0, 3)}):Play() end
     end
     local btn = Instance.new("TextButton"); btn.Size = UDim2.new(1,0,1,0); btn.Position = UDim2.new(0,0,0,0)
     btn.BackgroundTransparency = 1; btn.Text = ""; btn.ZIndex = 6; btn.Parent = frame
-    btn.MouseButton1Click:Connect(function()
-        state = not state; update(); if cb then cb(state) end
-    end)
+    btn.MouseButton1Click:Connect(function() state = not state; update(); if cb then cb(state) end end)
     if default then update() end
-    return {Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
+    return {Frame = frame, Set = function(v) state = v; update(); if cb then cb(v) end end, Get = function() return state end}
 end
 
--- ====================== DROPDOWN COM POPUP LAYER ======================
+-- Dropdown com PopupLayer
 local function Dropdown(parent, size, pos, placeholder, items, cb)
     local container = Frame(parent, size, pos, COLOR.ComponentBg, 3)
     Corner(container)
@@ -149,7 +106,8 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
     local listFrame = nil
     local selectedItem = nil
 
-    if not _G.PopupLayer then
+    -- Garantir PopupLayer
+    if not _G.PopupLayer or not _G.PopupLayer.Parent then
         _G.PopupLayer = Instance.new("Frame")
         _G.PopupLayer.Size = UDim2.fromScale(1, 1)
         _G.PopupLayer.BackgroundTransparency = 1
@@ -168,13 +126,10 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
         local containerSize = container.AbsoluteSize
         local listHeight = math.clamp(#items * 26, 40, 150)
 
-        listFrame = Frame(_G.PopupLayer,
-            UDim2.new(0, containerSize.X, 0, listHeight),
-            UDim2.new(0, containerPos.X, 0, containerPos.Y + containerSize.Y + 2),
-            COLOR.ComponentBg, 9999)
+        listFrame = Frame(_G.PopupLayer, UDim2.new(0, containerSize.X, 0, listHeight),
+            UDim2.new(0, containerPos.X, 0, containerPos.Y + containerSize.Y + 2), COLOR.ComponentBg, 9999)
         listFrame.Name = "DropdownList"
-        Corner(listFrame, CORNER); Stroke(listFrame, COLOR.Red, 1)
-        listFrame.ClipsDescendants = true
+        Corner(listFrame, CORNER); Stroke(listFrame, COLOR.Red, 1); listFrame.ClipsDescendants = true
 
         local scroll = Instance.new("ScrollingFrame")
         scroll.Size = UDim2.new(1, -4, 1, -4); scroll.Position = UDim2.new(0, 2, 0, 2)
@@ -194,8 +149,7 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
             itm.Parent = scroll
             itm.MouseButton1Click:Connect(function()
                 selectedItem = item; selectedLabel.Text = item; selectedLabel.TextColor3 = COLOR.White
-                closeList()
-                if cb then cb(item) end
+                closeList(); if cb then cb(item) end
             end)
         end
     end
@@ -224,7 +178,6 @@ local function Dropdown(parent, size, pos, placeholder, items, cb)
     }
 end
 
--- Slider e Notify (idênticos aos anteriores, respeitando _G.Settings)
 local function Slider(parent, size, pos, text, min, max, default, cb)
     local cont = Frame(parent, size, pos, COLOR.ComponentBg, 3)
     Corner(cont)
@@ -264,15 +217,11 @@ end
 
 -- ====================== TELA DE LOGIN ======================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FireHub"
-ScreenGui.Parent = CoreGui
-ScreenGui.DisplayOrder = 999
-ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "FireHub"; ScreenGui.Parent = CoreGui; ScreenGui.DisplayOrder = 999; ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local loginFrame = Frame(ScreenGui, UDim2.new(0,350,0,280), UDim2.new(0.5,-175,0.5,-140), COLOR.Background, 1)
-Corner(loginFrame); Stroke(loginFrame, COLOR.Red, 2); Glow(loginFrame, COLOR.Red, 25)
-Draggable(loginFrame)
+Corner(loginFrame); Stroke(loginFrame, COLOR.Red, 2); Glow(loginFrame, COLOR.Red, 25); Draggable(loginFrame)
 
 local topBar = Frame(loginFrame, UDim2.new(1,0,0,40), UDim2.new(0,0,0,0), COLOR.DarkRed, 2)
 Corner(topBar, UDim.new(0,8))
@@ -281,11 +230,9 @@ Button(topBar, UDim2.new(0,30,0,30), UDim2.new(1,-35,0,5), "×", COLOR.DarkRed, 
 
 Label(loginFrame, UDim2.new(0,80,0,40), UDim2.new(0.5,-40,0,42), "🔥", COLOR.Red, 34, 2)
 Label(loginFrame, UDim2.new(1,-20,0,20), UDim2.new(0,10,0,90), "Insira a chave de acesso", COLOR.White, 14, 2)
-local keyBox = TextBox(loginFrame, UDim2.new(1,-40,0,36), UDim2.new(0,20,0,120), "Chave...")
-Stroke(keyBox, COLOR.Red, 1)
+local keyBox = TextBox(loginFrame, UDim2.new(1,-40,0,36), UDim2.new(0,20,0,120), "Chave..."); Stroke(keyBox, COLOR.Red, 1)
 
-local statusLabel = Label(loginFrame, UDim2.new(1,-20,0,20), UDim2.new(0,20,0,190), "", COLOR.Red, 13, 2)
-statusLabel.TextTransparency = 1
+local statusLabel = Label(loginFrame, UDim2.new(1,-20,0,20), UDim2.new(0,20,0,190), "", COLOR.Red, 13, 2); statusLabel.TextTransparency = 1
 
 local function shake(elem)
     local orig = elem.Position
@@ -312,8 +259,7 @@ function BuildHub()
     local main = Frame(ScreenGui, UDim2.new(0,620,0,420), UDim2.new(0.5,-310,0.5,-210), COLOR.Background, 2)
     main.Visible = false; main.Size = UDim2.new(0,0,0,0)
     Corner(main); Stroke(main, COLOR.Red, 2)
-    local mainGlow = Glow(main, COLOR.Red, 22)
-    mainGlow.Visible = _G.Settings.Glow
+    local mainGlow = Glow(main, COLOR.Red, 22); mainGlow.Visible = _G.Settings.Glow
 
     local topBar = Frame(main, UDim2.new(1,0,0,42), UDim2.new(0,0,0,0), COLOR.DarkRed, 3)
     Corner(topBar, UDim.new(0,8))
@@ -332,10 +278,8 @@ function BuildHub()
     local function switchTab(name, build)
         if activeTab and activeTab.content then activeTab.content:Destroy() end
         if activeTab and activeTab.btn then activeTab.btn.BackgroundColor3 = Color3.fromRGB(15,15,15) end
-        local btn = tabs[name]
-        btn.BackgroundColor3 = COLOR.DarkRed
-        local content = build()
-        content.Parent = contentArea
+        local btn = tabs[name]; btn.BackgroundColor3 = COLOR.DarkRed
+        local content = build(); content.Parent = contentArea
         activeTab = {btn = btn, content = content}
     end
 
@@ -359,13 +303,9 @@ function BuildHub()
         dd.UpdateItems(currentList); return dd
     end
 
-    -- Ferramentas (mantidas)
+    -- Ferramentas
     local currentTpTool, currentSelectTool, currentBlackHoleTool = nil, nil, nil
-
-    local function removeTool(tool)
-        if tool and tool.Parent then tool:Destroy() end
-    end
-
+    local function removeTool(tool) if tool and tool.Parent then tool:Destroy() end end
     local function giveTpTool()
         removeTool(currentTpTool)
         local tool = Instance.new("Tool"); tool.Name = "tptool"; tool.RequiresHandle = false
@@ -375,7 +315,6 @@ function BuildHub()
         tool.Activated:Connect(function() local pos = mouse.Hit.Position; if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then player.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,3,0)) end end)]]
         Notify("tptool", "Ferramenta entregue.")
     end
-
     local function giveSelectTool(playerDropdown)
         removeTool(currentSelectTool)
         local tool = Instance.new("Tool"); tool.Name = "selecttool"; tool.RequiresHandle = false
@@ -386,7 +325,6 @@ function BuildHub()
         if plr and plr ~= player then local dropdown = _G.CurrentPlayerDropdown; if dropdown and dropdown.SetSelected then dropdown.SetSelected(plr.Name) end end end end)]]
         Notify("selecttool", "Ferramenta entregue.")
     end
-
     local function giveBlackHoleTool()
         removeTool(currentBlackHoleTool)
         local tool = Instance.new("Tool"); tool.Name = "BlackHole"; tool.RequiresHandle = false
@@ -403,10 +341,8 @@ function BuildHub()
         if plr and plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then currentCenter = plr.Character.HumanoidRootPart end end end) end)
         tool.Unequipped:Connect(function() if connection then connection:Disconnect() end; if clickConnection then clickConnection:Disconnect() end; currentCenter = nil end)]]
     end
-
     local function removeBlackHoleTool() removeTool(currentBlackHoleTool); currentBlackHoleTool = nil end
-    local function removeAllTools() removeTool(currentTpTool); currentTpTool = nil; removeTool(currentSelectTool); currentSelectTool = nil; removeBlackHoleTool() end
-
+    local function removeAllTools() removeTool(currentTpTool); removeTool(currentSelectTool); removeBlackHoleTool() end
     local function toggleView(state, playerDD)
         if state then local selected = playerDD.GetSelected()
             if selected then local target = Players:FindFirstChild(selected)
@@ -415,14 +351,11 @@ function BuildHub()
         else if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid end end
     end
 
-    -- Funções da aba Config
     local function resetCamera() if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid end end
     local function resetPlayerStats()
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
         if hum then hum.WalkSpeed = 16; hum.JumpPower = 50; hum.HipHeight = 2 end
-        Workspace.Gravity = 196.2
-        Workspace.CurrentCamera.FieldOfView = 70
-        resetCamera()
+        Workspace.Gravity = 196.2; Workspace.CurrentCamera.FieldOfView = 70; resetCamera()
     end
     local function resetInterface() main.Position = UDim2.new(0.5, -310, 0.5, -210); main.Size = UDim2.new(0,620,0,420) end
 
@@ -438,12 +371,49 @@ function BuildHub()
 
     tabs["🔥 Principal"].MouseButton1Click:Connect(function()
         switchTab("🔥 Principal", function()
-            local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0)); local y = 10
+            local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
+            local y = 10
+
             local row1 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); row1.BackgroundTransparency = 1
             Label(row1, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Jogador", COLOR.White, 13, 2)
-            local playerDD = createPlayerDropdown(row1, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Selecionar"); _G.CurrentPlayerDropdown = playerDD; y = y + 46
-            -- Método, Kill, Fling, View, tptool, selecttool, Black Hole (mesmo código anterior)
-            -- ... (omitido por brevidade, mas presente no script real)
+            local playerDD = createPlayerDropdown(row1, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Selecionar")
+            _G.CurrentPlayerDropdown = playerDD; y = y + 46
+
+            local row2 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); row2.BackgroundTransparency = 1
+            Label(row2, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Método", COLOR.White, 13, 2)
+            Dropdown(row2, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Escolher", {"Ball","Bus","Boat"}, function() end); y = y + 46
+
+            local killRow = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); killRow.BackgroundTransparency = 1
+            Label(killRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Kill", COLOR.White, 13, 2)
+            Button(killRow, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Kill >", COLOR.DarkRed, function()
+                local target = playerDD.GetSelected()
+                if target then local plr = Players:FindFirstChild(target)
+                    if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then plr.Character.Humanoid.Health = 0 end end
+            end); y = y + 46
+
+            local flingRow = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2); flingRow.BackgroundTransparency = 1
+            Label(flingRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Fling", COLOR.White, 13, 2)
+            ToggleSwitch(flingRow, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function() end); y = y + 30
+
+            local viewRow = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2); viewRow.BackgroundTransparency = 1
+            Label(viewRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "View", COLOR.White, 13, 2)
+            ToggleSwitch(viewRow, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state) toggleView(state, playerDD) end); y = y + 30
+
+            local tpRow = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); tpRow.BackgroundTransparency = 1
+            Label(tpRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "tptool", COLOR.White, 13, 2)
+            Button(tpRow, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "tptool >", COLOR.DarkRed, function() giveTpTool() end); y = y + 46
+
+            local selRow = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); selRow.BackgroundTransparency = 1
+            Label(selRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "selecttool", COLOR.White, 13, 2)
+            Button(selRow, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "selecttool >", COLOR.DarkRed, function() giveSelectTool(playerDD) end); y = y + 46
+
+            local bhRow = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2); bhRow.BackgroundTransparency = 1
+            Label(bhRow, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Black Hole", COLOR.White, 13, 2)
+            ToggleSwitch(bhRow, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state)
+                if state then giveBlackHoleTool(); Notify("Black Hole", "Ferramenta criada! Equipe e clique em alguém para transferir o buraco negro.")
+                else removeBlackHoleTool(); Notify("Black Hole", "Desativado") end
+            end)
+
             return f
         end)
     end)
@@ -468,24 +438,32 @@ function BuildHub()
 
     tabs["🔊 Áudio"].MouseButton1Click:Connect(function()
         switchTab("🔊 Áudio", function()
-            local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0)); local y = 10
+            local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
+            local y = 10
             local row1 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); row1.BackgroundTransparency = 1
             Label(row1, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Áudio", COLOR.White, 13, 2)
             local audioInput = TextBox(row1, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "ID do áudio"); y = y + 46
             local row2 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); row2.BackgroundTransparency = 1
             Label(row2, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Arquivos", COLOR.White, 13, 2)
-            local savedAudio = {}; local savedDD = Dropdown(row2, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Salvos", savedAudio, function() end); y = y + 46
+            local savedAudio = {}
+            local savedDD = Dropdown(row2, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Salvos", savedAudio, function() end); y = y + 46
             local row3 = Frame(f, UDim2.new(1,-20,0,24), UDim2.new(0,10,0,y), nil, 2); row3.BackgroundTransparency = 1
             Label(row3, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Tocar", COLOR.White, 13, 2)
-            local currentSound = nil; ToggleSwitch(row3, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state)
+            local currentSound = nil
+            ToggleSwitch(row3, UDim2.new(0,44,0,24), UDim2.new(0,70,0,0), false, function(state)
                 if state then local sel = savedDD.GetSelected()
                     if sel and tonumber(sel) then if currentSound then currentSound:Destroy() end
-                        currentSound = Instance.new("Sound"); currentSound.SoundId = "rbxassetid://"..sel; currentSound.Volume = 1; currentSound.Parent = Workspace; currentSound:Play() end
-                else if currentSound then currentSound:Stop(); currentSound:Destroy(); currentSound = nil end end end); y = y + 30
+                        currentSound = Instance.new("Sound"); currentSound.SoundId = "rbxassetid://"..sel
+                        currentSound.Volume = 1; currentSound.Parent = Workspace; currentSound:Play() end
+                else if currentSound then currentSound:Stop(); currentSound:Destroy(); currentSound = nil end end
+            end); y = y + 30
             local row4 = Frame(f, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,y), nil, 2); row4.BackgroundTransparency = 1
             Label(row4, UDim2.new(0,65,1,0), UDim2.new(0,0,0,0), "Save", COLOR.White, 13, 2)
             Button(row4, UDim2.new(1,-70,1,0), UDim2.new(0,70,0,0), "Save >", COLOR.DarkRed, function()
-                local id = audioInput.Text; if id ~= "" and tonumber(id) and not table.find(savedAudio, id) then table.insert(savedAudio, id); savedDD.UpdateItems(savedAudio); Notify("Áudio", "ID "..id.." salvo!") end end)
+                local id = audioInput.Text
+                if id ~= "" and tonumber(id) and not table.find(savedAudio, id) then
+                    table.insert(savedAudio, id); savedDD.UpdateItems(savedAudio); Notify("Áudio", "ID "..id.." salvo!") end
+            end)
             return f
         end)
     end)
@@ -509,51 +487,67 @@ function BuildHub()
             local f = Frame(nil, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
             local scroll = Instance.new("ScrollingFrame")
             scroll.Size = UDim2.new(1,0,1,0); scroll.Position = UDim2.new(0,0,0,0); scroll.BackgroundTransparency = 1
-            scroll.CanvasSize = UDim2.new(0,0,0,400); scroll.ScrollBarThickness = 3; scroll.ScrollBarImageColor3 = COLOR.Red; scroll.ZIndex = 2
-            scroll.Parent = f
+            scroll.CanvasSize = UDim2.new(0,0,0,400); scroll.ScrollBarThickness = 3; scroll.ScrollBarImageColor3 = COLOR.Red
+            scroll.ZIndex = 2; scroll.Parent = f
             local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 6)
             layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 10) end)
 
             local function addRow(height, name, element)
-                local row = Frame(scroll, UDim2.new(1,-10,0,height or 30), UDim2.new(0,5,0,0), nil, 2); row.BackgroundTransparency = 1
+                local row = Frame(scroll, UDim2.new(1,-10,0,height or 30), UDim2.new(0,5,0,0), nil, 2)
+                row.BackgroundTransparency = 1
                 Label(row, UDim2.new(0.65,-10,1,0), UDim2.new(0,5,0,0), name, COLOR.White, 13, 2)
-                if element then element.Parent = row; element.Position = UDim2.new(1, -element.Size.X.Offset - 10, 0.5, -element.Size.Y.Offset/2) end
+                if element then
+                    element.Parent = row
+                    element.Position = UDim2.new(1, -element.Size.X.Offset - 10, 0.5, -element.Size.Y.Offset/2)
+                end
                 return row
             end
 
             local function addSeparator()
-                local sep = Frame(scroll, UDim2.new(1,-10,0,1), UDim2.new(0,5,0,0), COLOR.Red, 2); return sep
+                local sep = Frame(scroll, UDim2.new(1,-10,0,1), UDim2.new(0,5,0,0), COLOR.Red, 2)
+                return sep
             end
 
             local function addButton(text, cb)
-                local btn = Button(scroll, UDim2.new(1,-10,0,32), UDim2.new(0,5,0,0), text, COLOR.DarkRed, cb); btn.TextSize = 13; return btn
+                local btn = Button(scroll, UDim2.new(1,-10,0,32), UDim2.new(0,5,0,0), text, COLOR.DarkRed, cb)
+                btn.TextSize = 13; return btn
             end
 
             -- Animações
             local animToggle = ToggleSwitch(nil, UDim2.new(0,44,0,24), nil, _G.Settings.Animations, function(state)
                 _G.Settings.Animations = state; Notify("Config", "Animações "..(state and "ativadas" or "desativadas"))
-            end); addRow(30, "Animações", animToggle.Frame)
+            end)
+            addRow(30, "Animações", animToggle.Frame)
 
             -- Glow
             local glowToggle = ToggleSwitch(nil, UDim2.new(0,44,0,24), nil, _G.Settings.Glow, function(state)
-                _G.Settings.Glow = state; mainGlow.Visible = state; Notify("Config", "Glow "..(state and "ativado" or "desativado"))
-            end); addRow(30, "Glow", glowToggle.Frame)
+                _G.Settings.Glow = state; mainGlow.Visible = state
+                Notify("Config", "Glow "..(state and "ativado" or "desativado"))
+            end)
+            addRow(30, "Glow", glowToggle.Frame)
 
             -- Notificações
             local notifToggle = ToggleSwitch(nil, UDim2.new(0,44,0,24), nil, _G.Settings.Notifications, function(state)
-                _G.Settings.Notifications = state; Notify("Config", "Notificações "..(state and "ativadas" or "desativadas"))
-            end); addRow(30, "Notificações", notifToggle.Frame)
+                _G.Settings.Notifications = state
+                Notify("Config", "Notificações "..(state and "ativadas" or "desativadas"))
+            end)
+            addRow(30, "Notificações", notifToggle.Frame)
 
             -- Sons
             local soundToggle = ToggleSwitch(nil, UDim2.new(0,44,0,24), nil, _G.Settings.Sounds, function(state)
                 _G.Settings.Sounds = state; Notify("Config", "Sons "..(state and "ativados" or "desativados"))
-            end); addRow(30, "Sons", soundToggle.Frame)
+            end)
+            addRow(30, "Sons", soundToggle.Frame)
 
             addSeparator()
 
             addButton("🔄 Resetar Interface", function() resetInterface(); Notify("Config", "Interface recentralizada.") end)
             addButton("🗑 Remover Ferramentas", function() removeAllTools(); Notify("Config", "Ferramentas removidas.") end)
-            addButton("♻️ Recarregar Hub", function() main.Visible = false; TweenService:Create(main, TweenInfo.new(0.2), {Size = UDim2.new(0,0,0,0)}):Play(); wait(0.25); main:Destroy(); wait(0.1); BuildHub(); Notify("Hub", "Recarregado!") end)
+            addButton("♻️ Recarregar Hub", function()
+                main.Visible = false
+                if _G.Settings.Animations then TweenService:Create(main, TweenInfo.new(0.2), {Size = UDim2.new(0,0,0,0)}):Play(); wait(0.25) end
+                main:Destroy(); wait(0.1); BuildHub(); Notify("Hub", "Recarregado!")
+            end)
             addButton("⚙️ Restaurar Status", function() resetPlayerStats(); Notify("Jogador", "Status padrão restaurado.") end)
             addButton("👁 Restaurar Câmera", function() resetCamera(); Notify("Câmera", "Câmera restaurada.") end)
 
@@ -573,7 +567,8 @@ function BuildHub()
             addInfo("UserId: "..LocalPlayer.UserId)
             addInfo("Jogo: "..game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
             addInfo("Jogadores: "..#Players:GetPlayers())
-            local timeLabel = addInfo("Tempo: 0s")
+            local timeLabel
+            timeLabel = addInfo("Tempo: 0s")
             local startTime = tick()
             RunService.Heartbeat:Connect(function()
                 if timeLabel and timeLabel.Parent then
@@ -587,12 +582,11 @@ function BuildHub()
         end)
     end)
 
-    -- Botão flutuante (arrastável)
+    -- Botão flutuante
     local floatBtn = Instance.new("TextButton")
     floatBtn.Size = UDim2.new(0,60,0,60); floatBtn.Position = UDim2.new(0,20,0.5,-30)
     floatBtn.BackgroundTransparency = 1; floatBtn.Text = "🔥"; floatBtn.TextSize = 38; floatBtn.Font = FONT
-    floatBtn.ZIndex = 10; floatBtn.Parent = ScreenGui
-    Draggable(floatBtn)
+    floatBtn.ZIndex = 10; floatBtn.Parent = ScreenGui; Draggable(floatBtn)
 
     floatBtn.MouseButton1Click:Connect(function()
         if main.Visible then
@@ -600,7 +594,8 @@ function BuildHub()
             main.Visible = false
         else
             main.Visible = true
-            if _G.Settings.Animations then TweenService:Create(main, TweenInfo.new(0.25), {Size = UDim2.new(0,620,0,420)}):Play() else main.Size = UDim2.new(0,620,0,420) end
+            if _G.Settings.Animations then TweenService:Create(main, TweenInfo.new(0.25), {Size = UDim2.new(0,620,0,420)}):Play()
+            else main.Size = UDim2.new(0,620,0,420) end
         end
     end)
 
